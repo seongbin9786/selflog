@@ -55,8 +55,13 @@ export const TextLogContainer = () => {
     const updatedLogs = rawLogs ? `${rawLogs}\n${newLog}` : newLog;
 
     setRawLogs(updatedLogs);
-    setQuickInput('');
+    resetInputs();
     textareaRef.current?.focus();
+  };
+
+  const resetInputs = () => {
+    setQuickInput('');
+    setIsProductive(true);
   };
 
   const handleEnterOnTextInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
