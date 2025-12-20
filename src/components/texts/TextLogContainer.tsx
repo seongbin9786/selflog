@@ -9,7 +9,7 @@ const storageListener = new StorageListener();
 
 export const TextLogContainer = () => {
   const checkboxRef = useRef<HTMLInputElement>(null); // NOTE: +/- 여부를 스페이스바로 쉽게 토글하고, 탭으로 곧장 quick input으로 이동 가능하므로, checkbox에 focus 둠.
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [quickInput, setQuickInput] = useState('');
   const [isProductive, setIsProductive] = useState(true);
 
@@ -24,8 +24,8 @@ export const TextLogContainer = () => {
   // 강제로 value를 rawLog로 동기화시킴.
   // 최초 렌더링 직후에 자동으로 채워진 텍스트는 안 보이게 됨.
   const synchronizeInput = () => {
-    if (inputRef.current) {
-      inputRef.current.value = rawLogs;
+    if (textareaRef.current) {
+      textareaRef.current.value = rawLogs;
     }
   };
 
@@ -56,7 +56,7 @@ export const TextLogContainer = () => {
 
     setRawLogs(updatedLogs);
     setQuickInput('');
-    checkboxRef.current?.focus();
+    textareaRef.current?.focus();
   };
 
   const handleEnterOnTextInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -112,7 +112,7 @@ export const TextLogContainer = () => {
       <textarea
         className="textarea textarea-bordered textarea-lg mb-2 aspect-square flex-1 text-xs"
         value={rawLogs}
-        ref={inputRef}
+        ref={textareaRef}
         onChange={handleChange}
       />
     </div>
