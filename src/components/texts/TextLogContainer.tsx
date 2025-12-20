@@ -52,10 +52,10 @@ export const TextLogContainer = () => {
       .padStart(2, '0')}`;
 
     const plusMinus = isProductive ? '+' : '-';
-    const newLog = `[${timeStr}] ${plusMinus} ${quickInput.trim()}`;
-    const updatedLogs = rawLogs ? `${rawLogs}\n${newLog}` : newLog;
+    const newLogItem = `[${timeStr}] ${plusMinus} ${quickInput.trim()}`;
+    const updatedRawLog = rawLogs.trimEnd().concat(`\n${newLogItem}`);
 
-    setRawLogs(updatedLogs);
+    setRawLogs(updatedRawLog);
     resetInputs();
     textareaRef.current?.focus();
   };
