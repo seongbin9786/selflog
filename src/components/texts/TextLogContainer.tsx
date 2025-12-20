@@ -38,24 +38,38 @@ export const TextLogContainer = () => {
     setQuickInput(e.target.value);
   };
 
-  const handleQuickInputSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const appendLog = () => {
+    if (!quickInput.trim()) {
+      return;
+    }
+
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const timeStr = `${hours.toString().padStart(2, '0')}:${minutes
+      .toString()
+      .padStart(2, '0')}`;
+
+    const plusMinus = isProductive ? '+' : '-';
+    const newLog = `[${timeStr}] ${plusMinus} ${quickInput.trim()}`;
+    const updatedLogs = rawLogs ? `${rawLogs}\n${newLog}` : newLog;
+
+    setRawLogs(updatedLogs);
+    setQuickInput('');
+    checkboxRef.current?.focus();
+  };
+
+  const handleEnterOnTextInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // NOTE: Enter 입력 시 마지막 글자도 함께 입력됨
-    if (e.key === 'Enter' && !e.nativeEvent.isComposing && quickInput.trim()) {
-      const now = new Date();
-      const hours = now.getHours();
-      const minutes = now.getMinutes();
-      const timeStr = `${hours.toString().padStart(2, '0')}:${minutes
-        .toString()
-        .padStart(2, '0')}`;
+    if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+      appendLog();
+    }
+  };
 
-      const plusMinus = isProductive ? '+' : '-';
-      const newLog = `[${timeStr}] ${plusMinus} ${quickInput.trim()}`;
-      const updatedLogs = rawLogs ? `${rawLogs}\n${newLog}` : newLog;
-
-      setRawLogs(updatedLogs);
-      setQuickInput('');
-
-      checkboxRef.current?.focus();
+  const handleEnterOnCheckbox = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      appendLog();
     }
   };
 
@@ -80,6 +94,7 @@ export const TextLogContainer = () => {
             className="checkbox checkbox-sm"
             checked={isProductive}
             onChange={(e) => setIsProductive(e.target.checked)}
+            onKeyDown={handleEnterOnCheckbox}
             ref={checkboxRef}
           />
           <span className="text-xs">{isProductive ? '+' : '-'}</span>
@@ -90,7 +105,7 @@ export const TextLogContainer = () => {
           placeholder="활동 내용 입력 후 엔터"
           value={quickInput}
           onChange={handleQuickInputChange}
-          onKeyDown={handleQuickInputSubmit}
+          onKeyDown={handleEnterOnTextInput}
         />
       </div>
 
