@@ -13,6 +13,7 @@ interface TimeSummaryProps {
 export const TimeSummary = ({ logs }: TimeSummaryProps) => {
   // 누적 값이므로 최종 값만 추출, 로그가 비어 있는 경우 추출 불가
   const { productive, wasted } = logs[logs.length - 1] || DEFAULT_VALUE;
+  const difference = productive - wasted;
 
   // 로그가 없으면 비율을 둘 모두 0%로 표시
   const hasAnyLogs = productive + wasted > 0;
@@ -21,12 +22,27 @@ export const TimeSummary = ({ logs }: TimeSummaryProps) => {
   const wastedRatio = hasAnyLogs ? 100 - _ratio : 0;
 
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-xs">
-        생산 합계: {minutesToTimeString(productive)} ({productiveRatio}%)
+    <div className="flex gap-1 text-lg">
+      <span>
+        초과 시간: [
+        <span className="font-bold text-red-600">
+          {minutesToTimeString(Math.abs(difference))}
+        </span>
+        ]
       </span>
-      <span className="text-xs">
-        소비 합계: {minutesToTimeString(wasted)} ({wastedRatio}%)
+      <span>
+        생산{' '}
+        <span className="font-bold text-green-600">
+          {minutesToTimeString(productive)}
+        </span>{' '}
+        ({productiveRatio}%)
+      </span>
+      <span>
+        소비{' '}
+        <span className="font-bold text-red-600">
+          {minutesToTimeString(wasted)}
+        </span>{' '}
+        ({wastedRatio}%)
       </span>
     </div>
   );
