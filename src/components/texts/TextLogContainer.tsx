@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { updateRawLog } from '../../store/logs';
 import { StorageListener } from '../../utils/StorageListener';
+import { ProductiveToggle } from './ProductiveToggle';
 
 const storageListener = new StorageListener();
 
@@ -93,17 +94,12 @@ export const TextLogContainer = () => {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <label className="flex cursor-pointer items-center gap-2">
-          <input
-            type="checkbox"
-            className="checkbox checkbox-sm"
-            checked={isProductive}
-            onChange={(e) => setIsProductive(e.target.checked)}
-            onKeyDown={handleEnterOnCheckbox}
-            ref={checkboxRef}
-          />
-          <span className="text-xs">{isProductive ? '+' : '-'}</span>
-        </label>
+        <ProductiveToggle
+          isProductive={isProductive}
+          setIsProductive={setIsProductive}
+          onKeyDown={handleEnterOnCheckbox}
+          checkboxRef={checkboxRef}
+        />
         <input
           type="text"
           className="input input-bordered flex-1 text-xs"
