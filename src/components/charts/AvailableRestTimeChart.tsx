@@ -17,6 +17,8 @@ interface AvailableRestTimeChartProps {
   logs: Log[];
 }
 
+const X_AXIS_PADDING = 30; // 분 단위
+
 export const AvailableRestTimeChart = ({
   logs,
 }: AvailableRestTimeChartProps) => {
@@ -30,6 +32,14 @@ export const AvailableRestTimeChart = ({
   const gradientOffset = calculateGradientOffset(data);
   const { highPoint, lowPoint } = findHighLowPoints(data);
   const yAxisConfig = getNormalizedYAxisTicks(data);
+  const currentPointConfig = getCurrentPointConfig(data, highPoint, lowPoint);
+
+  // X축 범위 계산: 데이터의 최소/최대 시각에 패딩 추가
+  const { minOffset, maxOffset } = getMinMaxOffset(data);
+  const customXAxisDomainForPaddingX = [
+    minOffset - X_AXIS_PADDING,
+    maxOffset + X_AXIS_PADDING,
+  ];
 
   return (
     <ResponsiveContainer className="min-h-0">
@@ -48,7 +58,7 @@ export const AvailableRestTimeChart = ({
           type="number"
           tick={{ fontSize: 16 }}
           tickFormatter={minutesToTimeString}
-          domain={[8 * 60, 27 * 60]}
+          domain={customXAxisDomainForPaddingX}
         />
         <YAxis
           tick={{ fontSize: 16 }}
@@ -79,7 +89,7 @@ export const AvailableRestTimeChart = ({
             strokeWidth={2}
           >
             <Label
-              value={highPoint.need.toFixed(0)}
+              value={formatMinutesWithSign(highPoint.need)}
               position="top"
               fill="red"
               fontSize={14}
@@ -97,9 +107,27 @@ export const AvailableRestTimeChart = ({
             strokeWidth={2}
           >
             <Label
-              value={lowPoint.need.toFixed(0)}
+              value={formatMinutesWithSign(lowPoint.need)}
               position="bottom"
               fill="green"
+              fontSize={14}
+              fontWeight="bold"
+            />
+          </ReferenceDot>
+        )}
+        {currentPointConfig.shouldShow && currentPointConfig.point && (
+          <ReferenceDot
+            x={currentPointConfig.point.offset}
+            y={currentPointConfig.point.need}
+            r={6}
+            fill={currentPointConfig.color}
+            stroke="white"
+            strokeWidth={2}
+          >
+            <Label
+              value={formatMinutesWithSign(currentPointConfig.point.need)}
+              position={currentPointConfig.position}
+              fill={currentPointConfig.color}
               fontSize={14}
               fontWeight="bold"
             />
@@ -144,6 +172,69 @@ function findHighLowPoints(data: ChartDataPoint[]) {
   );
 
   return { highPoint, lowPoint };
+}
+
+function formatMinutesWithSign(minutes: number): string {
+  const absMinutes = Math.abs(minutes);
+  return minutesToTimeString(absMinutes);
+}
+
+function isSamePoint(
+  point1: ChartDataPoint | null,
+  point2: ChartDataPoint | null,
+): boolean {
+  if (!point1 || !point2) return false;
+  return point1.offset === point2.offset;
+}
+
+function getMinMaxOffset(data: ChartDataPoint[]): {
+  minOffset: number;
+  maxOffset: number;
+} {
+  if (data.length === 0) {
+    return { minOffset: 8 * 60, maxOffset: 27 * 60 }; // 기본값: 08:00 ~ 27:00
+  }
+
+  let min = data[0].offset;
+  let max = data[0].offset;
+
+  for (const point of data) {
+    if (point.offset < min) min = point.offset;
+    if (point.offset > max) max = point.offset;
+  }
+
+  return { minOffset: min, maxOffset: max };
+}
+
+type CurrentPointConfig = {
+  point: ChartDataPoint | null;
+  shouldShow: boolean;
+  color: 'red' | 'green';
+  position: 'top' | 'bottom';
+};
+
+function getCurrentPointConfig(
+  data: ChartDataPoint[],
+  highPoint: ChartDataPoint | null,
+  lowPoint: ChartDataPoint | null,
+): CurrentPointConfig {
+  const point = data.length > 0 ? data[data.length - 1] : null;
+
+  if (!point) {
+    return {
+      point: null,
+      shouldShow: false,
+      color: 'red',
+      position: 'top',
+    };
+  }
+
+  const shouldShow =
+    !isSamePoint(point, highPoint) && !isSamePoint(point, lowPoint);
+  const color = point.need >= 0 ? 'red' : 'green';
+  const position = point.need >= 0 ? 'top' : 'bottom';
+
+  return { point, shouldShow, color, position };
 }
 
 function getNormalizedYAxisTicks(data: ChartDataPoint[]) {
