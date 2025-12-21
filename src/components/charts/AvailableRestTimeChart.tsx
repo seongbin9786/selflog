@@ -32,6 +32,11 @@ export const AvailableRestTimeChart = ({
   const currentPoint = data.length > 0 ? data[data.length - 1] : null;
   const yAxisConfig = getNormalizedYAxisTicks(data);
 
+  const shouldShowCurrentPoint =
+    currentPoint &&
+    !isSamePoint(currentPoint, highPoint) &&
+    !isSamePoint(currentPoint, lowPoint);
+
   return (
     <ResponsiveContainer className="min-h-0">
       <AreaChart
@@ -80,7 +85,7 @@ export const AvailableRestTimeChart = ({
             strokeWidth={2}
           >
             <Label
-              value={highPoint.need.toFixed(0)}
+              value={formatMinutesWithSign(highPoint.need)}
               position="top"
               fill="red"
               fontSize={14}
@@ -98,7 +103,7 @@ export const AvailableRestTimeChart = ({
             strokeWidth={2}
           >
             <Label
-              value={lowPoint.need.toFixed(0)}
+              value={formatMinutesWithSign(lowPoint.need)}
               position="bottom"
               fill="green"
               fontSize={14}
@@ -106,7 +111,7 @@ export const AvailableRestTimeChart = ({
             />
           </ReferenceDot>
         )}
-        {currentPoint && (
+        {shouldShowCurrentPoint && (
           <ReferenceDot
             x={currentPoint.offset}
             y={currentPoint.need}
@@ -116,7 +121,7 @@ export const AvailableRestTimeChart = ({
             strokeWidth={2}
           >
             <Label
-              value={currentPoint.need.toFixed(0)}
+              value={formatMinutesWithSign(currentPoint.need)}
               position="top"
               fill="blue"
               fontSize={14}
@@ -163,6 +168,19 @@ function findHighLowPoints(data: ChartDataPoint[]) {
   );
 
   return { highPoint, lowPoint };
+}
+
+function formatMinutesWithSign(minutes: number): string {
+  const absMinutes = Math.abs(minutes);
+  return minutesToTimeString(absMinutes);
+}
+
+function isSamePoint(
+  point1: ChartDataPoint | null,
+  point2: ChartDataPoint | null,
+): boolean {
+  if (!point1 || !point2) return false;
+  return point1.offset === point2.offset;
 }
 
 function getNormalizedYAxisTicks(data: ChartDataPoint[]) {
