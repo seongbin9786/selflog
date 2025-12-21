@@ -1,10 +1,13 @@
+import clsx from 'clsx';
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
+import { addLogEntry, createLogItem } from '../../features/RawLogEditor';
 import { useShake } from '../../hooks/useShake';
 import { RootState } from '../../store';
 import { updateRawLog } from '../../store/logs';
 import { StorageListener } from '../../utils/StorageListener';
+import { getCurrentTimeString, parseTimeInput } from '../../utils/timeUtils';
 import { ProductiveToggle } from './ProductiveToggle';
 
 const storageListener = new StorageListener();
@@ -12,10 +15,13 @@ const storageListener = new StorageListener();
 export const TextLogContainer = () => {
   const checkboxRef = useRef<HTMLInputElement>(null); // NOTE: +/- 여부를 스페이스바로 쉽게 토글하고, 탭으로 곧장 quick input으로 이동 가능하므로, checkbox에 focus 둠.
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const timeInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [timeInput, setTimeInput] = useState('');
   const [quickInput, setQuickInput] = useState('');
   const [isProductive, setIsProductive] = useState(true);
-  const { isShaking, shake } = useShake();
+  const { isShaking: isTimeInputShaking, shake: shakeTimeInput } = useShake();
+  const { isShaking: isQuickInputShaking, shake: shakeQuickInput } = useShake();
 
   const { currentDate, rawLogs } = useSelector(
     (state: RootState) => state.logs,
@@ -48,6 +54,10 @@ export const TextLogContainer = () => {
     setRawLogs(nextRawLog);
   };
 
+  const handleTimeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTimeInput(e.target.value);
+  };
+
   const handleQuickInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuickInput(e.target.value);
   };
@@ -55,21 +65,27 @@ export const TextLogContainer = () => {
   const appendLog = () => {
     const isInputEmpty = !quickInput.trim();
     if (isInputEmpty) {
-      shake();
+      shakeQuickInput();
       inputRef.current?.focus();
       return;
     }
 
-    const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    const timeStr = `${hours.toString().padStart(2, '0')}:${minutes
-      .toString()
-      .padStart(2, '0')}`;
+    const parsedTime = parseTimeInput(timeInput);
+    if (timeInput.trim() !== '' && !parsedTime) {
+      // 잘못된 시간 형식이 입력된 경우
+      shakeTimeInput();
+      timeInputRef.current?.focus();
+      return;
+    }
 
-    const plusMinus = isProductive ? '+' : '-';
-    const newLogItem = `[${timeStr}] ${plusMinus} ${quickInput.trim()}`;
-    const updatedRawLog = rawLogs.trimEnd().concat(`\n${newLogItem}`);
+    const timeStr = parsedTime || getCurrentTimeString();
+
+    const newLogItem = createLogItem(timeStr, isProductive, quickInput);
+    const updatedRawLog = addLogEntry(
+      rawLogs,
+      newLogItem,
+      timeInput.trim() !== '',
+    );
 
     setRawLogs(updatedRawLog);
     resetInputs();
@@ -77,6 +93,7 @@ export const TextLogContainer = () => {
   };
 
   const resetInputs = () => {
+    setTimeInput('');
     setQuickInput('');
     setIsProductive(true);
   };
@@ -117,11 +134,24 @@ export const TextLogContainer = () => {
           checkboxRef={checkboxRef}
         />
         <input
+          ref={timeInputRef}
+          type="text"
+          className={clsx(
+            'input input-bordered w-20 text-xs',
+            isTimeInputShaking ? 'shake-animation' : '',
+          )}
+          placeholder={getCurrentTimeString()}
+          value={timeInput}
+          onChange={handleTimeInputChange}
+          onKeyDown={handleEnterOnTextInput}
+        />
+        <input
           ref={inputRef}
           type="text"
-          className={`input input-bordered flex-1 text-xs ${
-            isShaking ? 'shake-animation' : ''
-          }`}
+          className={clsx(
+            'input input-bordered flex-1 text-xs',
+            isQuickInputShaking ? 'shake-animation' : '',
+          )}
           placeholder="Enter 키를 눌러 활동 내역 추가"
           value={quickInput}
           onChange={handleQuickInputChange}
