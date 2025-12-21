@@ -29,6 +29,7 @@ export const AvailableRestTimeChart = ({
 
   const gradientOffset = calculateGradientOffset(data);
   const { highPoint, lowPoint } = findHighLowPoints(data);
+  const currentPoint = data.length > 0 ? data[data.length - 1] : null;
   const yAxisConfig = getNormalizedYAxisTicks(data);
 
   return (
@@ -100,6 +101,24 @@ export const AvailableRestTimeChart = ({
               value={lowPoint.need.toFixed(0)}
               position="bottom"
               fill="green"
+              fontSize={14}
+              fontWeight="bold"
+            />
+          </ReferenceDot>
+        )}
+        {currentPoint && (
+          <ReferenceDot
+            x={currentPoint.offset}
+            y={currentPoint.need}
+            r={6}
+            fill="blue"
+            stroke="white"
+            strokeWidth={2}
+          >
+            <Label
+              value={currentPoint.need.toFixed(0)}
+              position="top"
+              fill="blue"
               fontSize={14}
               fontWeight="bold"
             />
