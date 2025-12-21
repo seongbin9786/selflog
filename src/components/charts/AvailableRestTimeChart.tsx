@@ -17,6 +17,8 @@ interface AvailableRestTimeChartProps {
   logs: Log[];
 }
 
+const X_AXIS_PADDING = 30; // 분 단위
+
 export const AvailableRestTimeChart = ({
   logs,
 }: AvailableRestTimeChartProps) => {
@@ -31,6 +33,13 @@ export const AvailableRestTimeChart = ({
   const { highPoint, lowPoint } = findHighLowPoints(data);
   const yAxisConfig = getNormalizedYAxisTicks(data);
   const currentPointConfig = getCurrentPointConfig(data, highPoint, lowPoint);
+
+  // X축 범위 계산: 데이터의 최소/최대 시각에 패딩 추가
+  const { minOffset, maxOffset } = getMinMaxOffset(data);
+  const customXAxisDomainForPaddingX = [
+    minOffset - X_AXIS_PADDING,
+    maxOffset + X_AXIS_PADDING,
+  ];
 
   return (
     <ResponsiveContainer className="min-h-0">
@@ -49,7 +58,7 @@ export const AvailableRestTimeChart = ({
           type="number"
           tick={{ fontSize: 16 }}
           tickFormatter={minutesToTimeString}
-          domain={[8 * 60, 27 * 60]}
+          domain={customXAxisDomainForPaddingX}
         />
         <YAxis
           tick={{ fontSize: 16 }}
@@ -176,6 +185,25 @@ function isSamePoint(
 ): boolean {
   if (!point1 || !point2) return false;
   return point1.offset === point2.offset;
+}
+
+function getMinMaxOffset(data: ChartDataPoint[]): {
+  minOffset: number;
+  maxOffset: number;
+} {
+  if (data.length === 0) {
+    return { minOffset: 8 * 60, maxOffset: 27 * 60 }; // 기본값: 08:00 ~ 27:00
+  }
+
+  let min = data[0].offset;
+  let max = data[0].offset;
+
+  for (const point of data) {
+    if (point.offset < min) min = point.offset;
+    if (point.offset > max) max = point.offset;
+  }
+
+  return { minOffset: min, maxOffset: max };
 }
 
 type CurrentPointConfig = {
