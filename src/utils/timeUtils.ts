@@ -37,25 +37,34 @@ export const getCurrentTimeStringConsideringMaxTime = (
 
 /**
  * 시간 입력 문자열을 파싱하여 유효한 HH:mm 형식으로 반환
- * @param input 사용자 입력 문자열
+ * @param input 사용자 입력 문자열 (예: "00:25", "0025", "1230")
  * @returns 유효한 시간 문자열 또는 null (유효하지 않은 경우)
  */
 export const parseTimeInput = (input: string): string | null => {
   const trimmed = input.trim();
   if (trimmed === '') return null;
 
-  // 1~2자리 시간, 2자리 분 허용
-  const timeRegex = /^(\d{1,2}):(\d{2})$/;
-  const match = trimmed.match(timeRegex);
-  if (!match) return null;
+  let hours: number;
+  let minutes: number;
 
-  const hours = parseInt(match[1], 10);
-  const minutes = parseInt(match[2], 10);
-
-  // NOTE: hours 상한이 없는 이유: 자정 넘어서도 기록 가능 (e.g. 24:xx, 25:xx, ...)
-  if (hours < 0 || minutes < 0 || minutes > 59) {
-    return null;
+  // 콜론 여부에 따라 시간, 분 추출
+  if (trimmed.includes(':')) {
+    const parts = trimmed.split(':');
+    if (parts.length !== 2) return null;
+    hours = parseInt(parts[0], 10);
+    minutes = parseInt(parts[1], 10);
+  } else {
+    if (trimmed.length < 3) return null;
+    const hoursStr = trimmed.slice(0, -2);
+    const minutesStr = trimmed.slice(-2);
+    hours = parseInt(hoursStr, 10);
+    minutes = parseInt(minutesStr, 10);
   }
+
+  // 유효성 검증
+  if (isNaN(hours) || isNaN(minutes)) return null;
+  // NOTE: hours 상한이 없는 이유: 자정 넘어서도 기록 가능 (e.g. 24:xx, 25:xx, ...)
+  if (hours < 0 || minutes < 0 || minutes > 59) return null;
 
   return `${hours.toString().padStart(2, '0')}:${minutes
     .toString()

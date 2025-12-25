@@ -26,6 +26,24 @@ describe('parseTimeInput', () => {
     expect(parseTimeInput('25')).toBeNull();
     expect(parseTimeInput('')).toBeNull();
   });
+
+  it('콜론 없이 숫자만 입력해도 파싱한다', () => {
+    expect(parseTimeInput('0025')).toBe('00:25');
+    expect(parseTimeInput('1230')).toBe('12:30');
+    expect(parseTimeInput('930')).toBe('09:30');
+    expect(parseTimeInput('000')).toBe('00:00');
+  });
+
+  it('콜론 없이 24시간을 넘어가는 시간을 파싱한다', () => {
+    expect(parseTimeInput('2530')).toBe('25:30');
+    expect(parseTimeInput('26000')).toBe('260:00');
+  });
+
+  it('숫자만 입력 시 잘못된 형식에 대해 null을 반환한다', () => {
+    expect(parseTimeInput('1')).toBeNull(); // 1자리
+    expect(parseTimeInput('25')).toBeNull(); // 2자리
+    expect(parseTimeInput('1260')).toBeNull(); // 60분은 유효하지 않음
+  });
 });
 
 describe('timeToMinutes', () => {
