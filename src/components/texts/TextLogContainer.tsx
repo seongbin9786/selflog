@@ -7,7 +7,11 @@ import { useShake } from '../../hooks/useShake';
 import { RootState } from '../../store';
 import { updateRawLog } from '../../store/logs';
 import { StorageListener } from '../../utils/StorageListener';
-import { getCurrentTimeString, parseTimeInput } from '../../utils/timeUtils';
+import {
+  getCurrentTimeStringConsideringMaxTime,
+  getMaxTimeFromLogs,
+  parseTimeInput,
+} from '../../utils/timeUtils';
 import { ProductiveToggle } from './ProductiveToggle';
 
 const storageListener = new StorageListener();
@@ -28,6 +32,11 @@ export const TextLogContainer = () => {
   );
   const dispatch = useDispatch();
   const setRawLogs = (nextRawLog: string) => dispatch(updateRawLog(nextRawLog));
+
+  // placeholder용: maxTime이 고려된 현재 시각
+  const maxTime = getMaxTimeFromLogs(rawLogs);
+  const currentTimeConsideringMaxTime =
+    getCurrentTimeStringConsideringMaxTime(maxTime);
 
   useEffect(
     function updateChartEvery30Seconds() {
@@ -78,7 +87,8 @@ export const TextLogContainer = () => {
       return;
     }
 
-    const timeStr = parsedTime || getCurrentTimeString();
+    // 사용자가 직접 입력한 경우 parsedTime 그대로, 아니면 placeholder 값 사용
+    const timeStr = parsedTime || currentTimeConsideringMaxTime;
 
     const newLogItem = createLogItem(timeStr, isProductive, quickInput);
     const updatedRawLog = addLogEntry(
@@ -140,7 +150,7 @@ export const TextLogContainer = () => {
             'input input-bordered w-20 text-xs',
             isTimeInputShaking ? 'shake-animation' : '',
           )}
-          placeholder={getCurrentTimeString()}
+          placeholder={currentTimeConsideringMaxTime}
           value={timeInput}
           onChange={handleTimeInputChange}
           onKeyDown={handleEnterOnTextInput}

@@ -11,6 +11,31 @@ export const getCurrentTimeString = (): string => {
 };
 
 /**
+ * 최대 시간을 고려하여 현재 시각을 반환
+ * 현재 시각이 최대 시간보다 작거나 같으면 24시간을 더함
+ * @param maxTimeInMinutes 최대 시간 (분 단위), -1이면 조정하지 않음
+ * @returns 현재 시각 문자열 (HH:mm 또는 HHH:mm 형식)
+ */
+export const getCurrentTimeStringConsideringMaxTime = (
+  maxTimeInMinutes: number,
+): string => {
+  const now = new Date();
+  let hours = now.getHours();
+  const minutes = now.getMinutes();
+
+  if (maxTimeInMinutes !== -1) {
+    const currentTimeInMinutes = hours * 60 + minutes;
+    while (currentTimeInMinutes <= maxTimeInMinutes) {
+      hours += 24;
+    }
+  }
+
+  return `${hours.toString().padStart(2, '0')}:${minutes
+    .toString()
+    .padStart(2, '0')}`;
+};
+
+/**
  * 시간 입력 문자열을 파싱하여 유효한 HH:mm 형식으로 반환
  * @param input 사용자 입력 문자열
  * @returns 유효한 시간 문자열 또는 null (유효하지 않은 경우)
@@ -19,6 +44,7 @@ export const parseTimeInput = (input: string): string | null => {
   const trimmed = input.trim();
   if (trimmed === '') return null;
 
+  // 1~2자리 시간, 2자리 분 허용
   const timeRegex = /^(\d{1,2}):(\d{2})$/;
   const match = trimmed.match(timeRegex);
   if (!match) return null;
@@ -26,7 +52,8 @@ export const parseTimeInput = (input: string): string | null => {
   const hours = parseInt(match[1], 10);
   const minutes = parseInt(match[2], 10);
 
-  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+  // NOTE: hours 상한이 없는 이유: 자정 넘어서도 기록 가능 (e.g. 24:xx, 25:xx, ...)
+  if (hours < 0 || minutes < 0 || minutes > 59) {
     return null;
   }
 
@@ -43,4 +70,30 @@ export const parseTimeInput = (input: string): string | null => {
 export const timeToMinutes = (timeStr: string): number => {
   const [hours, minutes] = timeStr.split(':').map(Number);
   return hours * 60 + minutes;
+};
+
+/**
+ * rawLogs에서 최대 시간을 추출
+ * @param rawLogs 전체 로그 문자열
+ * @returns 최대 시간 (분 단위), 로그가 없으면 -1
+ */
+export const getMaxTimeFromLogs = (rawLogs: string): number => {
+  if (!rawLogs || rawLogs.trim() === '') {
+    return -1;
+  }
+
+  const lines = rawLogs.split('\n');
+  let maxTime = -1;
+
+  for (const line of lines) {
+    if (line.trim() === '') continue;
+
+    const timeMatch = line.match(/\[(\d{2}:\d{2})/);
+    if (timeMatch) {
+      const time = timeToMinutes(timeMatch[1]);
+      maxTime = Math.max(maxTime, time);
+    }
+  }
+
+  return maxTime;
 };
