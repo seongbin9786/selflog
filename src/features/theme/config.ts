@@ -50,4 +50,5 @@ export const LIGHT_THEMES: Theme[] = [
 ];
 
 export const THEME_STORAGE_KEY = 'app-theme';
-export const DEFAULT_THEME: Theme = 'cupcake';
+export const DEFAULT_LIGHT_THEME: Theme = 'cupcake';
+export const DEFAULT_DARK_THEME: Theme = 'forest';

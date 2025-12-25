@@ -1,6 +1,7 @@
 import {
   AVAILABLE_THEMES,
-  DEFAULT_THEME,
+  DEFAULT_DARK_THEME,
+  DEFAULT_LIGHT_THEME,
   Theme,
   THEME_STORAGE_KEY,
 } from './config';
@@ -23,9 +24,17 @@ export function setDaisyUiThemeCssVariable(theme: Theme) {
 
 export function loadSavedTheme(): Theme {
   const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-  const validTheme = checkIsValidTheme(savedTheme) ? savedTheme : DEFAULT_THEME;
+  const validTheme = checkIsValidTheme(savedTheme)
+    ? savedTheme
+    : getIsDarkMode()
+      ? DEFAULT_DARK_THEME
+      : DEFAULT_LIGHT_THEME;
 
   setDaisyUiThemeCssVariable(validTheme);
 
   return validTheme;
+}
+
+function getIsDarkMode(): boolean {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
