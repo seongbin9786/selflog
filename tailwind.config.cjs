@@ -6,6 +6,6 @@ export default {
   },
   plugins: [require('daisyui')],
   daisyui: {
-    themes: ['cupcake', 'dark'],
+    themes: true, // NOTE: 모든 DaisyUI 테마 활성화
   },
 };
