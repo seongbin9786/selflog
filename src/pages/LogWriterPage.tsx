@@ -1,14 +1,17 @@
 import { Bell, Timer } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import { DayNavigator } from '../components/days/DayNavigator';
-import { SoundSettingsDialog } from '../components/dialogs/SoundSettingsDialog';
 import { TextLogContainer } from '../components/texts/TextLogContainer';
 import { Area_AvailableRestTimeChart } from '../features/AvailableRestTimeChartArea';
 import { Area_ProductivePaceChart } from '../features/ProductivePaceChartArea';
+import {
+  useRemainingTime,
+  useRestNotification,
+} from '../features/restNotification';
+import { SoundSettingsDialog } from '../features/soundSettings';
 import { ThemeSelector } from '../features/theme/ThemeSelector';
-import { useRestNotification } from '../hooks/useRestNotification';
 import { RootState } from '../store';
 
 export const LogWriterPage = () => {
@@ -16,8 +19,6 @@ export const LogWriterPage = () => {
   useRestNotification();
 
   const [isSoundSettingsOpen, setIsSoundSettingsOpen] = useState(false);
-  const [remainingTime, setRemainingTime] = useState<string>('');
-  const [isOvertime, setIsOvertime] = useState(false);
 
   // 바로 다음 컴포넌트이니 직접 주입, redux 의존성 낮추기 위함.
   const logsForCharts = useSelector(
@@ -29,36 +30,8 @@ export const LogWriterPage = () => {
     (state: RootState) => state.restNotification.currentNotification,
   );
 
-  // 잔여 시간 계산 및 업데이트
-  useEffect(() => {
-    if (!currentNotification) {
-      setRemainingTime('');
-      setIsOvertime(false);
-      return;
-    }
-
-    const updateRemainingTime = () => {
-      const { startTime, durationMinutes } = currentNotification;
-      const endTime = startTime + durationMinutes * 60 * 1000;
-      const now = Date.now();
-      const remaining = endTime - now;
-
-      const isNegative = remaining < 0;
-      setIsOvertime(isNegative);
-
-      const absRemaining = Math.abs(remaining);
-      const minutes = Math.floor(absRemaining / 60000);
-      const seconds = Math.floor((absRemaining % 60000) / 1000);
-
-      const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-      setRemainingTime(isNegative ? `-${timeStr}` : timeStr);
-    };
-
-    updateRemainingTime();
-    const interval = setInterval(updateRemainingTime, 1000);
-
-    return () => clearInterval(interval);
-  }, [currentNotification]);
+  // 잔여 시간 계산
+  const { remainingTime, isOvertime } = useRemainingTime(currentNotification);
 
   return (
     <div className="mx-auto flex h-screen min-w-[400px] max-w-screen-xl flex-col p-4">

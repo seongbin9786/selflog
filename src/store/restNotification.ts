@@ -1,10 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export interface RestNotification {
-  targetTime: string; // HH:mm 형식
-  durationMinutes: number;
-  startTime: number; // timestamp
-}
+import type { RestNotification } from '../types/sound';
 
 export type RestNotificationState = {
   currentNotification: RestNotification | null;

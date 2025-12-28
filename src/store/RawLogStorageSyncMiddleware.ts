@@ -1,7 +1,7 @@
 import type { TypedStartListening } from '@reduxjs/toolkit';
 import { createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit';
 
-import { loadFromStorage, saveToStorage } from '../utils/Storage';
+import { loadFromStorage, saveToStorage } from '../utils/storage';
 import type { AppDispatch, RootState } from '.';
 import { goToNextDate, goToPrevDate, goToToday, updateRawLog } from './logs';
 

@@ -1,9 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-import { RootState } from '../store';
-import { clearRestNotification } from '../store/restNotification';
-import { playBeeps } from '../utils/soundUtil';
+import { AUDIO_CONSTRAINTS } from '../../constants/sound';
+import { RootState } from '../../store';
+import { clearRestNotification } from '../../store/restNotification';
+import { playBeeps } from '../../utils/soundUtil';
+import {
+  calculateEndTime,
+  calculateOneMinuteBefore,
+} from '../../utils/timeCalculator';
 
 /**
  * 휴식 시간 알림을 관리하는 hook
@@ -25,10 +30,9 @@ export const useRestNotification = () => {
 
     const { startTime, durationMinutes } = currentNotification;
 
-    // 종료 1분 전 알림 시간 계산
-    const oneMinuteBeforeMs = durationMinutes * 60 * 1000 - 60 * 1000;
-    // 종료 시각 알림 시간 계산
-    const endTimeMs = durationMinutes * 60 * 1000;
+    // 시간 계산
+    const oneMinuteBeforeMs = calculateOneMinuteBefore(durationMinutes);
+    const endTimeMs = calculateEndTime(durationMinutes);
 
     const now = Date.now();
     const elapsed = now - startTime;
@@ -55,7 +59,7 @@ export const useRestNotification = () => {
           repeatIntervalRef.current = setInterval(() => {
             console.log('휴식 종료 알림 (반복)');
             playBeeps(3, selectedSound, customSoundData);
-          }, 5000); // 5초마다 반복
+          }, AUDIO_CONSTRAINTS.REPEAT_INTERVAL_MS);
         } else {
           dispatch(clearRestNotification());
         }
