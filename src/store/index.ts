@@ -2,10 +2,14 @@ import { configureStore } from '@reduxjs/toolkit';
 
 import { LogsReducer } from './logs';
 import { RawLogStorageSyncMiddleware } from './RawLogStorageSyncMiddleware';
+import { RestNotificationReducer } from './restNotification';
+import { SoundSettingsReducer } from './soundSettings';
 
 export const store = configureStore({
   reducer: {
     logs: LogsReducer,
+    restNotification: RestNotificationReducer,
+    soundSettings: SoundSettingsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().prepend(RawLogStorageSyncMiddleware.middleware),
