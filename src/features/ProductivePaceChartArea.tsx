@@ -3,7 +3,7 @@ import { ChangeEvent, useState } from 'react';
 import { ProductivePaceChart } from '../components/charts/ProductivePaceChart';
 import { DEFAULT_PACE_IN_MIN } from '../policies/userConfig';
 import { avgPaceOf, Log } from '../utils/PaceUtil';
-import { loadFromStorage, saveToStorage } from '../utils/Storage';
+import { loadFromStorage, saveToStorage } from '../utils/StorageUtil';
 import { parseOrDefault } from '../utils/StringUtil';
 
 const STORAGE_KEY_TARGET_PACE = 'targetPace';

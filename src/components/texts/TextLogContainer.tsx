@@ -6,12 +6,17 @@ import { addLogEntry, createLogItem } from '../../features/RawLogEditor';
 import { useShake } from '../../hooks/useShake';
 import { RootState } from '../../store';
 import { updateRawLog } from '../../store/logs';
+import {
+  clearRestNotification,
+  setRestNotification,
+} from '../../store/restNotification';
 import { StorageListener } from '../../utils/StorageListener';
 import {
   getCurrentTimeStringConsideringMaxTime,
   getMaxTimeFromLogs,
   parseTimeInput,
 } from '../../utils/timeUtils';
+import { RestTimeInputDialog } from '../dialogs/RestTimeInputDialog';
 import { ProductiveToggle } from './ProductiveToggle';
 
 const storageListener = new StorageListener();
@@ -24,6 +29,11 @@ export const TextLogContainer = () => {
   const [timeInput, setTimeInput] = useState('');
   const [quickInput, setQuickInput] = useState('');
   const [isProductive, setIsProductive] = useState(true);
+  const [isRestDialogOpen, setIsRestDialogOpen] = useState(false);
+  const [pendingRestLog, setPendingRestLog] = useState<{
+    timeStr: string;
+    content: string;
+  } | null>(null);
   const { isShaking: isTimeInputShaking, shake: shakeTimeInput } = useShake();
   const { isShaking: isQuickInputShaking, shake: shakeQuickInput } = useShake();
 
@@ -90,6 +100,14 @@ export const TextLogContainer = () => {
     // 사용자가 직접 입력한 경우 parsedTime 그대로, 아니면 placeholder 값 사용
     const timeStr = parsedTime || currentTimeConsideringMaxTime;
 
+    // 휴식 로그인 경우 Dialog 표시
+    if (!isProductive) {
+      setPendingRestLog({ timeStr, content: quickInput });
+      setIsRestDialogOpen(true);
+      return;
+    }
+
+    // 생산 로그 추가
     const newLogItem = createLogItem(timeStr, isProductive, quickInput);
     const updatedRawLog = addLogEntry(
       rawLogs,
@@ -98,6 +116,10 @@ export const TextLogContainer = () => {
     );
 
     setRawLogs(updatedRawLog);
+
+    // 생산 로그 추가 시 알림 중단
+    dispatch(clearRestNotification());
+
     resetInputs();
     textareaRef.current?.focus();
   };
@@ -106,6 +128,45 @@ export const TextLogContainer = () => {
     setTimeInput('');
     setQuickInput('');
     setIsProductive(true);
+  };
+
+  const handleRestTimeSubmit = (minutes: number) => {
+    if (!pendingRestLog) return;
+
+    const { timeStr, content } = pendingRestLog;
+
+    // 휴식 로그 추가
+    const newLogItem = createLogItem(timeStr, false, content);
+    const updatedRawLog = addLogEntry(
+      rawLogs,
+      newLogItem,
+      timeInput.trim() !== '',
+    );
+
+    setRawLogs(updatedRawLog);
+
+    // 알림 설정
+    dispatch(
+      setRestNotification({
+        targetTime: timeStr,
+        durationMinutes: minutes,
+      }),
+    );
+
+    // 상태 초기화
+    resetInputs();
+    setPendingRestLog(null);
+    textareaRef.current?.focus();
+  };
+
+  const handleRestDialogClose = () => {
+    // Dialog를 취소한 경우 로그를 추가하지 않고 입력 상태 유지
+    setPendingRestLog(null);
+    setIsRestDialogOpen(false);
+    // 입력 필드에 포커스를 다시 맞춤
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
   };
 
   const handleEnterOnTextInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -181,6 +242,12 @@ export const TextLogContainer = () => {
         value={rawLogs}
         ref={textareaRef}
         onChange={handleChange}
+      />
+
+      <RestTimeInputDialog
+        isOpen={isRestDialogOpen}
+        onClose={handleRestDialogClose}
+        onSubmit={handleRestTimeSubmit}
       />
     </div>
   );

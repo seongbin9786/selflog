@@ -1,9 +1,8 @@
 import './theme-transition.css';
 
 import clsx from 'clsx';
+import { Check, Moon, Sun } from 'lucide-react';
 
-import MoonIcon from '../../assets/icons/moon.svg?react';
-import SunIcon from '../../assets/icons/sun.svg?react';
 import { LIGHT_THEMES, Theme } from './config';
 import { useTheme } from './useTheme';
 import { makeThemeNameReadable } from './util';
@@ -12,7 +11,7 @@ export const ThemeSelector = () => {
   const { theme, setTheme, availableThemes } = useTheme();
 
   return (
-    <div className="dropdown dropdown-end">
+    <div className="dropdown-end dropdown">
       <ThemeSelectorButton theme={theme} />
       <ThemeList
         availableThemes={availableThemes}
@@ -28,7 +27,7 @@ interface ThemeSelectorButtonProps {
 
 function ThemeSelectorButton({ theme }: ThemeSelectorButtonProps) {
   const isLightTheme = LIGHT_THEMES.includes(theme);
-  const IconComponent = isLightTheme ? SunIcon : MoonIcon;
+  const IconComponent = isLightTheme ? Sun : Moon;
 
   return (
     <button
@@ -36,7 +35,7 @@ function ThemeSelectorButton({ theme }: ThemeSelectorButtonProps) {
       className="btn btn-circle btn-ghost transition-transform duration-200 hover:rotate-12"
       aria-label="테마 선택"
     >
-      <IconComponent className="h-6 w-6" />
+      <IconComponent size={16} />
     </button>
   );
 }
@@ -89,7 +88,7 @@ function ThemeListItem({
         className={clsx({ active: isActive })}
       >
         <span className="flex-1">{makeThemeNameReadable(themeName)}</span>
-        {isActive && <span className="text-primary">✓</span>}
+        {isActive && <Check size={16} className="text-primary" />}
       </button>
     </li>
   );

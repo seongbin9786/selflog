@@ -7,7 +7,7 @@ import {
 } from '../utils/DateUtil';
 import { createLogsFromString } from '../utils/LogConverter';
 import { Log } from '../utils/PaceUtil';
-import { loadFromStorage } from '../utils/Storage';
+import { loadFromStorage } from '../utils/StorageUtil';
 
 export type LogState = {
   currentDate: string;
