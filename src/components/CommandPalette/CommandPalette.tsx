@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import { Search } from 'lucide-react';
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 export interface Command {
   id: string;
@@ -164,9 +164,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     </div>
                   )}
                 </div>
-                {index === selectedIndex && (
-                  <kbd className="kbd kbd-sm">↵</kbd>
-                )}
+                {index === selectedIndex && <kbd className="kbd kbd-sm">↵</kbd>}
               </button>
             ))
           )}

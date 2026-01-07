@@ -29,6 +29,8 @@ export const AvailableRestTimeChart = ({
   // X축 범위 계산: 데이터의 최소/최대 시각에 패딩 추가
   const { minXAxisDomain, maxXAxisDomain } = getMinMaxXAxisDomain(data);
 
+  const gradientId = 'availableRestTimeSplitColor';
+
   return (
     <ResponsiveContainer className="min-h-0">
       <AreaChart
@@ -52,10 +54,14 @@ export const AvailableRestTimeChart = ({
           tick={{ fontSize: 16 }}
           domain={yAxisConfig.domain}
           ticks={yAxisConfig.ticks}
+          tickFormatter={(value) => `${value}`}
         />
-        <Tooltip labelFormatter={minutesToTimeString} />
+        <Tooltip
+          labelFormatter={minutesToTimeString}
+          formatter={(value: any) => [`${value}분`, '초과 휴식']}
+        />
         <defs>
-          <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <stop offset={gradientOffset} stopColor="red" stopOpacity={1} />
             <stop offset={gradientOffset} stopColor="green" stopOpacity={1} />
           </linearGradient>
@@ -65,7 +71,7 @@ export const AvailableRestTimeChart = ({
           dataKey="need"
           unit="min"
           stroke="#000"
-          fill="url(#splitColor)"
+          fill={`url(#${gradientId})`}
         />
         {getPoints(data)}
       </AreaChart>

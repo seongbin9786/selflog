@@ -1,12 +1,11 @@
 import './App.css';
 
-import { PlusCircle, FileText, BarChart2 } from 'lucide-react';
+import { BarChart2, FileText, PlusCircle } from 'lucide-react';
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 
-import { CommandPalette, Command } from './components/CommandPalette';
-import { Routes } from './Routes';
+import { Command, CommandPalette } from './components/CommandPalette';
 import { useCommandPalette } from './hooks/useCommandPalette';
+import { Routes } from './Routes';
 import { focusActivityInput } from './utils/commandEvents';
 
 export const App = () => {

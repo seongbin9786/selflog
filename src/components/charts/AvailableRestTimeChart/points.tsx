@@ -10,20 +10,21 @@ export const getPoints = (data: ChartDataPoint[]) => {
   const points: JSX.Element[] = [];
 
   if (highPoint) {
+    const color = highPoint.need >= 0 ? 'red' : 'green';
     points.push(
       <ReferenceDot
         key="high"
         x={highPoint.offset}
         y={highPoint.need}
         r={5}
-        fill="red"
+        fill={color}
         stroke="white"
         strokeWidth={2}
       >
         <Label
           value={formatMinutesWithSign(highPoint.need)}
           position="top"
-          fill="red"
+          fill={color}
           fontSize={14}
           fontWeight="bold"
         />
@@ -32,20 +33,21 @@ export const getPoints = (data: ChartDataPoint[]) => {
   }
 
   if (lowPoint) {
+    const color = lowPoint.need >= 0 ? 'red' : 'green';
     points.push(
       <ReferenceDot
         key="low"
         x={lowPoint.offset}
         y={lowPoint.need}
         r={5}
-        fill="green"
+        fill={color}
         stroke="white"
         strokeWidth={2}
       >
         <Label
           value={formatMinutesWithSign(lowPoint.need)}
           position="bottom"
-          fill="green"
+          fill={color}
           fontSize={14}
           fontWeight="bold"
         />
@@ -95,7 +97,8 @@ function findHighLowPoints(data: ChartDataPoint[]) {
 
 function formatMinutesWithSign(minutes: number): string {
   const absMinutes = Math.abs(minutes);
-  return minutesToTimeString(absMinutes);
+  const timeString = minutesToTimeString(absMinutes);
+  return minutes >= 0 ? timeString : `-${timeString}`;
 }
 
 const NEAR_POINT_THRESHOLD = 6;

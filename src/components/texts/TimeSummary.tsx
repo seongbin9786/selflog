@@ -21,11 +21,15 @@ export const TimeSummary = ({ logs }: TimeSummaryProps) => {
   const productiveRatio = hasAnyLogs ? _ratio : 0;
   const wastedRatio = hasAnyLogs ? 100 - _ratio : 0;
 
+  const isProductiveSurplus = difference >= 0;
+  const label = isProductiveSurplus ? '확보 시간' : '초과 시간';
+  const colorClass = isProductiveSurplus ? 'text-green-600' : 'text-red-600';
+
   return (
     <div className="flex gap-1 text-lg">
       <span>
-        초과 시간: [
-        <span className="font-bold text-red-600">
+        {label}: [
+        <span className={`font-bold ${colorClass}`}>
           {minutesToTimeString(Math.abs(difference))}
         </span>
         ]

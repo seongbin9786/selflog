@@ -5,12 +5,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addLogEntry, createLogItem } from '../../features/RawLogEditor';
 import { useShake } from '../../hooks/useShake';
 import { RootState } from '../../store';
-import { addFocusActivityInputListener } from '../../utils/commandEvents';
 import { updateRawLog } from '../../store/logs';
 import {
   clearRestNotification,
   setRestNotification,
 } from '../../store/restNotification';
+import { addFocusActivityInputListener } from '../../utils/commandEvents';
 import { StorageListener } from '../../utils/StorageListener';
 import {
   getCurrentTimeStringConsideringMaxTime,
