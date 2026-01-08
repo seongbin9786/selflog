@@ -1,5 +1,6 @@
 import { ChangeEvent, useState } from 'react';
 
+import { DayRatioBar } from '../components/charts/DayRatioBar';
 import { ProductivePaceChart } from '../components/charts/ProductivePaceChart';
 import { DEFAULT_PACE_IN_MIN } from '../policies/userConfig';
 import { avgPaceOf, Log } from '../utils/PaceUtil';
@@ -30,12 +31,15 @@ export const Area_ProductivePaceChart = ({
     <div className="flex flex-col gap-2">
       <div>
         <h1 className="text-sm font-bold">[생산 페이스]</h1>
-        <span className="text-xs">목표 페이스 설정: </span>
-        <input
-          className="input input-bordered input-xs"
-          value={targetPace}
-          onChange={updateTargetPace}
-        />
+        <DayRatioBar logs={logsForCharts} />
+        <div className="mt-1 flex items-center gap-2">
+          <span className="text-xs">목표 페이스 설정: </span>
+          <input
+            className="input input-bordered input-xs"
+            value={targetPace}
+            onChange={updateTargetPace}
+          />
+        </div>
       </div>
       <ProductivePaceChart
         data={logsForCharts}
