@@ -1,11 +1,15 @@
 import bcrypt from "bcryptjs";
 const { compare, genSalt, hash } = bcrypt;
+import { fileURLToPath } from "node:url";
+
+import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { handle } from "hono/aws-lambda";
 import { cors } from "hono/cors";
 import { jwt } from "hono/jwt";
 import { logger } from "hono/logger";
-import { sign } from "jsonwebtoken";
+import jwtPkg from "jsonwebtoken";
+const { sign } = jwtPkg;
 
 import { getAllLogs, getLog, getLogBackups, saveLog } from "./logs";
 import { createUser, findUser } from "./users";
@@ -180,11 +184,13 @@ app.get("/raw-logs/:date/backups", async (c) => {
 // Export for Lambda
 export const handler = handle(app);
 
-// Export for local dev (if needed, though dev script uses tsx watch src/index.ts which needs explicit serve)
 // For local development with `tsx`, we need to serve it manually using @hono/node-server
-if (require.main === module) {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { serve } = require("@hono/node-server");
+const isMain =
+  process.argv[1] &&
+  (process.argv[1] === fileURLToPath(import.meta.url) ||
+    process.argv[1].endsWith("index.ts"));
+
+if (isMain) {
   const port = Number(process.env.PORT) || 3000;
   console.log(`Server is running on port ${port}`);
   serve({

@@ -1,6 +1,8 @@
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 
+import { bulkSaveLogsToServer } from '../../services/LogService';
+import { calculateHashSync } from '../../utils/HashUtil';
 import { BACKUP_VERSION, BackupData } from './types';
 
 const LOG_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -36,21 +38,44 @@ export const downloadBackupInfo = (backup: BackupData) => {
   saveAs(blob, `my-time-backup-${new Date().toISOString().slice(0, 10)}.json`);
 };
 
-export const importBackup = async (file: File): Promise<boolean> => {
+type ImportBackupReport = {
+  fileName: string;
+  fileSize: number;
+  totalLogs: number;
+  appliedLogs: number;
+  skippedEmptyLogs: number;
+  appliedSettings: string[];
+  failedLogs: string[];
+};
+
+const matchesStoredContent = (stored: string | null, expected: string) => {
+  if (stored === null) return false;
+  if (stored === expected) return true;
+  try {
+    const parsed = JSON.parse(stored) as { content?: unknown };
+    return typeof parsed.content === 'string' && parsed.content === expected;
+  } catch {
+    return false;
+  }
+};
+
+export const importBackup = async (file: File): Promise<ImportBackupReport> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const content = e.target?.result as string;
         const backupRaw = JSON.parse(content);
 
         let logs: Record<string, string> = {};
         let settings: Record<string, string> = {};
+        let isLegacyFormat = true;
 
         // Check if it's new format or legacy format
         if (backupRaw.logs && backupRaw.settings) {
           logs = backupRaw.logs;
           settings = backupRaw.settings;
+          isLegacyFormat = false;
         } else {
           // Legacy format (flat localStorage dump)
           Object.entries(backupRaw).forEach(([key, value]) => {
@@ -69,21 +94,95 @@ export const importBackup = async (file: File): Promise<boolean> => {
           throw new Error('No valid data found in backup file');
         }
 
-        // Apply logs
-        Object.entries(logs).forEach(([key, value]) => {
-          if (LOG_DATE_REGEX.test(key) && value) {
-            localStorage.setItem(key, value);
+        // Clear existing date logs before applying backup
+        const existingLogKeys: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && LOG_DATE_REGEX.test(key)) {
+            existingLogKeys.push(key);
           }
+        }
+        existingLogKeys.forEach((key) => localStorage.removeItem(key));
+
+        // Apply logs
+        const logEntries = Object.entries(logs).filter(([key]) =>
+          LOG_DATE_REGEX.test(key),
+        );
+        const emptyLogs = logEntries.filter(([, value]) => !value);
+
+        const serverSyncedDates = new Set<string>();
+        if (isLegacyFormat) {
+          const payload = logEntries
+            .filter(([, value]) => value)
+            .map(([date, value]) => ({
+              date,
+              content: String(value),
+              contentHash: calculateHashSync(String(value)),
+              parentHash: null,
+            }));
+
+          if (payload.length > 0) {
+            const result = await bulkSaveLogsToServer(payload);
+            if (result?.success && result.data) {
+              result.data.forEach((item) => {
+                localStorage.setItem(
+                  item.date,
+                  JSON.stringify({
+                    content: item.content,
+                    contentHash: item.contentHash,
+                    parentHash: item.parentHash,
+                    localUpdatedAt: item.updatedAt,
+                  }),
+                );
+                serverSyncedDates.add(item.date);
+              });
+            }
+          }
+        }
+
+        logEntries.forEach(([key, value]) => {
+          if (!value || serverSyncedDates.has(key)) {
+            return;
+          }
+          localStorage.setItem(key, String(value));
         });
 
         // Apply settings
+        const appliedSettings: string[] = [];
         Object.entries(settings).forEach(([key, value]) => {
           if (value && SETTING_KEYS.includes(key)) {
             localStorage.setItem(key, value);
+            appliedSettings.push(key);
           }
         });
 
-        resolve(true);
+        const failedLogs: string[] = [];
+        logEntries
+          .filter(([, value]) => value)
+          .forEach(([key, value]) => {
+            const stored = localStorage.getItem(key);
+            if (!matchesStoredContent(stored, String(value))) {
+              failedLogs.push(key);
+            }
+          });
+
+        const report: ImportBackupReport = {
+          fileName: file.name,
+          fileSize: file.size,
+          totalLogs: logEntries.length,
+          appliedLogs: logEntries.length - emptyLogs.length,
+          skippedEmptyLogs: emptyLogs.length,
+          appliedSettings,
+          failedLogs,
+        };
+
+        if (failedLogs.length > 0) {
+          console.error('[importBackup] verification failed:', report);
+          throw new Error('Import verification failed');
+        }
+
+        console.log('[importBackup] report:', report);
+        resolve(report);
       } catch (err) {
         console.error(err);
         reject(err);
