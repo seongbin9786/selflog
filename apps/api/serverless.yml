@@ -1,0 +1,109 @@
+service: my-time-api
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ${opt:region, 'ap-northeast-2'}
+  stage: ${opt:stage, 'dev'}
+  memorySize: 256
+  timeout: 10
+  
+  environment:
+    SLS_STAGE: ${self:provider.stage}
+    DYNAMODB_TABLE_USERS: ${self:custom.usersTableName}
+    DYNAMODB_TABLE: ${self:custom.logsTableName}
+    JWT_SECRET: ${env:JWT_SECRET, 'your-secret-key-change-in-production'}
+    IS_OFFLINE: ${self:custom.isOffline.${self:provider.stage}, 'false'}
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource:
+            - !GetAtt UsersTable.Arn
+            - !GetAtt LogsTable.Arn
+
+custom:
+  usersTableName: my-time-users-${self:provider.stage}
+  logsTableName: my-time-logs-${self:provider.stage}
+  
+  isOffline:
+    local: 'true'
+    dev: 'false'
+    prod: 'false'
+
+  serverless-offline:
+    httpPort: 3000
+    noPrependStageInUrl: true
+    reloadHandler: true
+
+  dynamodb:
+    stages:
+      - local
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
+      seed: true
+    seed:
+      domain:
+        sources:
+          - table: ${self:custom.usersTableName}
+            sources: [./seed/users.json]
+          - table: ${self:custom.logsTableName}
+            sources: [./seed/logs.json]
+
+functions:
+  api:
+    handler: dist/index.handler
+    events:
+      - httpApi: '*'
+
+plugins:
+  - serverless-dynamodb
+  - serverless-offline
+
+resources:
+  Resources:
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.usersTableName}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: username
+            AttributeType: S
+        KeySchema:
+          - AttributeName: username
+            KeyType: HASH
+        Tags:
+          - Key: Environment
+            Value: ${self:provider.stage}
+
+    LogsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.logsTableName}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: date
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+          - AttributeName: date
+            KeyType: RANGE
+        Tags:
+          - Key: Environment
+            Value: ${self:provider.stage}
