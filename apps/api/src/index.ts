@@ -6,7 +6,13 @@ import { jwt } from "hono/jwt";
 import { logger } from "hono/logger";
 import { sign } from "jsonwebtoken";
 
-import { getAllLogs, getLog, getLogBackups, saveLog } from "./logs";
+import {
+  bulkSaveLogs,
+  getAllLogs,
+  getLog,
+  getLogBackups,
+  saveLog,
+} from "./logs";
 import { createUser, findUser } from "./users";
 
 const app = new Hono();
@@ -18,7 +24,7 @@ app.use(
   cors({
     origin: ["http://localhost:5173", "http://localhost:4000"],
     credentials: true,
-  }),
+  })
 );
 
 const JWT_SECRET = process.env.JWT_SECRET || "secretKey";
@@ -119,11 +125,29 @@ app.post("/raw-logs", async (c) => {
       date,
       content || "",
       contentHash,
-      parentHash ?? null,
+      parentHash ?? null
     );
     return c.json({ success: true, data: savedLog });
   } catch (error) {
     console.error("Save log error:", error);
+    return c.json({ message: "Internal Server Error" }, 500);
+  }
+});
+
+app.post("/raw-logs/bulk", async (c) => {
+  try {
+    const payload = c.get("jwtPayload");
+    const userId = payload.username || payload.sub;
+    const { logs } = await c.req.json();
+
+    if (!logs || !Array.isArray(logs)) {
+      return c.json({ message: "logs array is required" }, 400);
+    }
+
+    const savedLogs = await bulkSaveLogs(userId, logs);
+    return c.json({ success: true, data: savedLogs });
+  } catch (error) {
+    console.error("Bulk save logs error:", error);
     return c.json({ message: "Internal Server Error" }, 500);
   }
 });

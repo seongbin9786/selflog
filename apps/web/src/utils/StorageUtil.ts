@@ -98,3 +98,22 @@ export const saveToStorage = (
 
 // Re-export LocalStorageManager from its new location
 export { LocalStorageManager } from './LocalStorageManager';
+
+const LOG_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * localStorage에서 모든 로그 데이터(날짜 키)를 삭제합니다.
+ * 설정 및 기타 데이터는 유지됩니다.
+ */
+export const clearAllLogData = (): void => {
+  const keysToDelete: string[] = [];
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && LOG_DATE_REGEX.test(key)) {
+      keysToDelete.push(key);
+    }
+  }
+
+  keysToDelete.forEach((key) => localStorage.removeItem(key));
+};
