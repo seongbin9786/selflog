@@ -14,8 +14,6 @@ export const useRemainingTime = (
 
   useEffect(() => {
     if (!currentNotification) {
-      setRemainingTime('');
-      setIsOvertime(false);
       return;
     }
 
@@ -32,6 +30,13 @@ export const useRemainingTime = (
 
     return () => clearInterval(interval);
   }, [currentNotification]);
+
+  if (!currentNotification) {
+    return {
+      remainingTime: '',
+      isOvertime: false,
+    };
+  }
 
   return {
     remainingTime,

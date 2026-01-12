@@ -58,7 +58,7 @@ export const AvailableRestTimeChart = ({
         />
         <Tooltip
           labelFormatter={minutesToTimeString}
-          formatter={(value: any) => [`${value}분`, '초과 휴식']}
+          formatter={(value: number | string) => [`${value}분`, '초과 휴식']}
         />
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">

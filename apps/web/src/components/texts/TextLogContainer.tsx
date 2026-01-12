@@ -46,7 +46,10 @@ export const TextLogContainer = () => {
     (state: RootState) => state.logs,
   );
   const dispatch = useDispatch();
-  const setRawLogs = (nextRawLog: string) => dispatch(updateRawLog(nextRawLog));
+  const setRawLogs = useCallback(
+    (nextRawLog: string) => dispatch(updateRawLog(nextRawLog)),
+    [dispatch],
+  );
 
   // 이벤트 핸들러에서 항상 최신 rawLogs를 참조하기 위한 ref
   const rawLogsRef = useRef(rawLogs);
@@ -73,11 +76,11 @@ export const TextLogContainer = () => {
   // 최근에 닫았던 탭을 다시 살리는 경우, input value가 채워진 상태로 켜짐.
   // 강제로 value를 rawLog로 동기화시킴.
   // 최초 렌더링 직후에 자동으로 채워진 텍스트는 안 보이게 됨.
-  const synchronizeInput = () => {
+  const synchronizeInput = useCallback(() => {
     if (textareaRef.current) {
-      textareaRef.current.value = rawLogs;
+      textareaRef.current.value = rawLogsRef.current;
     }
-  };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const nextRawLog = e.target.value;
@@ -135,11 +138,11 @@ export const TextLogContainer = () => {
     textareaRef.current?.focus();
   };
 
-  const resetInputs = () => {
+  const resetInputs = useCallback(() => {
     setTimeInput('');
     setQuickInput('');
     setIsProductive(true);
-  };
+  }, []);
 
   const handleRestTimeSubmit = (minutes: number) => {
     if (!pendingRestLog) return;
@@ -197,14 +200,14 @@ export const TextLogContainer = () => {
   useEffect(() => {
     synchronizeInput();
     checkboxRef.current?.focus();
-  }, []);
+  }, [synchronizeInput]);
 
   // handleDateChange를 하지 말고, 여기서 return을 해서 cleanup을 하도록 하면 prevDate 만들 필요 없음.
   // https://legacy.reactjs.org/docs/hooks-faq.html#how-to-get-the-previous-props-or-state
   useEffect(() => {
     storageListener.install(currentDate, setRawLogs);
     checkboxRef.current?.focus();
-  }, [currentDate]);
+  }, [currentDate, setRawLogs]);
 
   const handleQuickAppend = useCallback(
     (isProductiveLog: boolean, message: string) => {
@@ -227,7 +230,7 @@ export const TextLogContainer = () => {
         textareaRef.current?.focus();
       }, 100);
     },
-    [currentTimeConsideringMaxTime, dispatch],
+    [currentTimeConsideringMaxTime, dispatch, resetInputs, setRawLogs],
   );
 
   // Command Palette & Keyboard shortcuts
@@ -295,7 +298,7 @@ export const TextLogContainer = () => {
           <span className="text-xs text-base-content/60">간단 입력</span>
           <button
             type="button"
-            className="btn btn-outline btn-success btn-xs"
+            className="btn btn-success btn-outline btn-xs"
             onClick={() => handleQuickAppend(true, '생산')}
             title="생산 기록 추가"
           >
@@ -303,7 +306,7 @@ export const TextLogContainer = () => {
           </button>
           <button
             type="button"
-            className="btn btn-outline btn-warning btn-xs"
+            className="btn btn-warning btn-outline btn-xs"
             onClick={() => handleQuickAppend(false, '소비')}
             title="소비 기록 추가"
           >

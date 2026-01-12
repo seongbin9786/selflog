@@ -27,7 +27,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-
   // 검색어로 커맨드 필터링
   const filteredCommands = useMemo(() => {
     const trimmedQuery = searchQuery.trim();

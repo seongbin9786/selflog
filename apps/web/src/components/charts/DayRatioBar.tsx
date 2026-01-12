@@ -36,7 +36,7 @@ export const DayRatioBar = ({ logs }: { logs: Log[] }) => {
 
   return (
     <div
-      className="flex h-3 w-full min-w-0 flex-nowrap overflow-hidden rounded-full bg-gray-100 isolate transform-gpu"
+      className="isolate flex h-3 w-full min-w-0 transform-gpu flex-nowrap overflow-hidden rounded-full bg-gray-100"
       style={{ WebkitMaskImage: '-webkit-radial-gradient(white, black)' }}
     >
       {blocks.map((block, idx) => (

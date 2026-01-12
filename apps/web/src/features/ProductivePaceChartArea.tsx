@@ -8,7 +8,7 @@ import { loadFromStorage, saveToStorage } from '../utils/StorageUtil';
 import { parseOrDefault } from '../utils/StringUtil';
 
 const STORAGE_KEY_TARGET_PACE = 'targetPace';
-const storedTargetPace = loadFromStorage(STORAGE_KEY_TARGET_PACE);
+const storedTargetPace = loadFromStorage(STORAGE_KEY_TARGET_PACE).content;
 const initialTargetPace = parseOrDefault(storedTargetPace, DEFAULT_PACE_IN_MIN);
 
 /**

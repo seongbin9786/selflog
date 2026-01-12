@@ -74,7 +74,9 @@ export const SoundSettingsDialog: React.FC<SoundSettingsDialogProps> = ({
     handleFileUpload(file || null, ({ data, name }) => {
       dispatch(setCustomSound({ data, name }));
     });
-    event.target.value = '';
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   // 삭제 확인 핸들러

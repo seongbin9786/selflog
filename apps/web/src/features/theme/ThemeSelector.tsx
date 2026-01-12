@@ -11,7 +11,7 @@ export const ThemeSelector = () => {
   const { theme, setTheme, availableThemes } = useTheme();
 
   return (
-    <div className="dropdown-end dropdown">
+    <div className="dropdown dropdown-end">
       <ThemeSelectorButton theme={theme} />
       <ThemeList
         availableThemes={availableThemes}

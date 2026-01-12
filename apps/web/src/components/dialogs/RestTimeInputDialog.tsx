@@ -23,9 +23,9 @@ export const RestTimeInputDialog: React.FC<RestTimeInputDialogProps> = ({
       // Dialog가 열릴 때 입력 필드에 포커스
       setTimeout(() => {
         inputRef.current?.focus();
+        setMinutesInput('');
+        setError('');
       }, 100);
-      setMinutesInput('');
-      setError('');
     }
   }, [isOpen]);
 
