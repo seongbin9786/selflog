@@ -1,9 +1,10 @@
-import { Bell, Settings, Timer } from 'lucide-react';
+import { Bell, Timer } from 'lucide-react';
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import { AuthHeader } from '../components/auth/AuthHeader';
-import { SyncStatusIndicator } from '../components/common/SyncStatusIndicator';
+import { ConflictDialog } from '../components/common/ConflictDialog';
+import { DataManagementButton } from '../components/dataManagement/DataManagementButton';
 import { DayNavigator } from '../components/days/DayNavigator';
 import { TextLogContainer } from '../components/texts/TextLogContainer';
 import { Area_AvailableRestTimeChart } from '../features/AvailableRestTimeChartArea';
@@ -64,15 +65,7 @@ export const LogWriterPage = () => {
             <Bell size={16} />
           </button>
 
-          <button
-            type="button"
-            className="btn btn-circle btn-ghost"
-            onClick={() => setIsDataManagementOpen(true)}
-            title="데이터 관리"
-          >
-            <Settings size={16} />
-          </button>
-          <SyncStatusIndicator />
+          <DataManagementButton onClick={() => setIsDataManagementOpen(true)} />
           <ThemeSelector />
           <AuthHeader />
         </div>
@@ -92,6 +85,7 @@ export const LogWriterPage = () => {
         isOpen={isDataManagementOpen}
         onClose={() => setIsDataManagementOpen(false)}
       />
+      <ConflictDialog />
     </div>
   );
 };
