@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import { BACKUP_VERSION, BackupData } from './types';
 
 const LOG_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-const SETTING_KEYS = ['soundSettings', 'targetPace'];
+const SETTING_KEYS = ['soundSettings', 'targetPace', 'app-theme'];
 
 export const createBackup = (): BackupData => {
   const logs: Record<string, string> = {};
@@ -42,21 +42,42 @@ export const importBackup = async (file: File): Promise<boolean> => {
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string;
-        const backup = JSON.parse(content) as BackupData;
+        const backupRaw = JSON.parse(content);
 
-        if (!backup.logs || !backup.settings) {
-          throw new Error('Invalid backup format');
+        let logs: Record<string, string> = {};
+        let settings: Record<string, string> = {};
+
+        // Check if it's new format or legacy format
+        if (backupRaw.logs && backupRaw.settings) {
+          logs = backupRaw.logs;
+          settings = backupRaw.settings;
+        } else {
+          // Legacy format (flat localStorage dump)
+          Object.entries(backupRaw).forEach(([key, value]) => {
+            if (LOG_DATE_REGEX.test(key)) {
+              logs[key] = String(value);
+            } else if (SETTING_KEYS.includes(key)) {
+              settings[key] = String(value);
+            }
+          });
+        }
+
+        if (
+          Object.keys(logs).length === 0 &&
+          Object.keys(settings).length === 0
+        ) {
+          throw new Error('No valid data found in backup file');
         }
 
         // Apply logs
-        Object.entries(backup.logs).forEach(([key, value]) => {
-          if (LOG_DATE_REGEX.test(key)) {
+        Object.entries(logs).forEach(([key, value]) => {
+          if (LOG_DATE_REGEX.test(key) && value) {
             localStorage.setItem(key, value);
           }
         });
 
         // Apply settings
-        Object.entries(backup.settings).forEach(([key, value]) => {
+        Object.entries(settings).forEach(([key, value]) => {
           if (value && SETTING_KEYS.includes(key)) {
             localStorage.setItem(key, value);
           }

@@ -1,4 +1,5 @@
-import { compare, genSalt, hash } from "bcryptjs";
+import bcrypt from "bcryptjs";
+const { compare, genSalt, hash } = bcrypt;
 import { Hono } from "hono";
 import { handle } from "hono/aws-lambda";
 import { cors } from "hono/cors";
@@ -124,6 +125,26 @@ app.post("/raw-logs", async (c) => {
     return c.json({ success: true, data: savedLog });
   } catch (error) {
     console.error("Save log error:", error);
+    return c.json({ message: "Internal Server Error" }, 500);
+  }
+});
+
+app.post("/raw-logs/bulk", async (c) => {
+  try {
+    const payload = c.get("jwtPayload");
+    const userId = payload.username || payload.sub;
+    const { logs } = await c.req.json();
+
+    if (!Array.isArray(logs)) {
+      return c.json({ message: "Logs must be an array" }, 400);
+    }
+
+    const { bulkSaveLogs } = await import("./logs");
+    const savedLogs = await bulkSaveLogs(userId, logs);
+
+    return c.json({ success: true, data: savedLogs });
+  } catch (error) {
+    console.error("Bulk save logs error:", error);
     return c.json({ message: "Internal Server Error" }, 500);
   }
 });

@@ -131,3 +131,25 @@ export const getLogBackups = async (userId: string, date: string) => {
 
   return result.Items as BackupItem[];
 };
+export const bulkSaveLogs = async (
+  userId: string,
+  logs: {
+    date: string;
+    content: string;
+    contentHash: string;
+    parentHash: string | null;
+  }[],
+) => {
+  const results = [];
+  for (const log of logs) {
+    const saved = await saveLog(
+      userId,
+      log.date,
+      log.content,
+      log.contentHash,
+      log.parentHash,
+    );
+    results.push(saved);
+  }
+  return results;
+};
