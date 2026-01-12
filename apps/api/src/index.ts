@@ -24,7 +24,7 @@ app.use(
   cors({
     origin: ["http://localhost:5173", "http://localhost:4000"],
     credentials: true,
-  })
+  }),
 );
 
 const JWT_SECRET = process.env.JWT_SECRET || "secretKey";
@@ -125,7 +125,7 @@ app.post("/raw-logs", async (c) => {
       date,
       content || "",
       contentHash,
-      parentHash ?? null
+      parentHash ?? null,
     );
     return c.json({ success: true, data: savedLog });
   } catch (error) {
