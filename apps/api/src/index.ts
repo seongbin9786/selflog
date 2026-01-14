@@ -11,7 +11,13 @@ import { logger } from "hono/logger";
 import jwtPkg from "jsonwebtoken";
 const { sign } = jwtPkg;
 
-import { getAllLogs, getLog, getLogBackups, saveLog } from "./logs";
+import {
+  bulkSaveLogs,
+  getAllLogs,
+  getLog,
+  getLogBackups,
+  saveLog,
+} from "./logs";
 import { createUser, findUser } from "./users";
 
 const app = new Hono();
@@ -144,13 +150,11 @@ app.post("/raw-logs/bulk", async (c) => {
     const userId = payload.username || payload.sub;
     const { logs } = await c.req.json();
 
-    if (!Array.isArray(logs)) {
-      return c.json({ message: "Logs must be an array" }, 400);
+    if (!logs || !Array.isArray(logs)) {
+      return c.json({ message: "logs array is required" }, 400);
     }
 
-    const { bulkSaveLogs } = await import("./logs");
     const savedLogs = await bulkSaveLogs(userId, logs);
-
     return c.json({ success: true, data: savedLogs });
   } catch (error) {
     console.error("Bulk save logs error:", error);

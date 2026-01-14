@@ -131,16 +131,23 @@ export const getLogBackups = async (userId: string, date: string) => {
 
   return result.Items as BackupItem[];
 };
+export interface BulkLogInput {
+  date: string;
+  content: string;
+  contentHash: string;
+  parentHash: string | null;
+}
+
+/**
+ * 여러 로그를 한 번에 저장합니다.
+ * 각 날짜별로 기존 데이터가 있으면 백업 후 새 데이터를 저장합니다.
+ */
 export const bulkSaveLogs = async (
   userId: string,
-  logs: {
-    date: string;
-    content: string;
-    contentHash: string;
-    parentHash: string | null;
-  }[]
-) => {
-  const results = [];
+  logs: BulkLogInput[]
+): Promise<LogItem[]> => {
+  const savedLogs: LogItem[] = [];
+
   for (const log of logs) {
     const saved = await saveLog(
       userId,
@@ -149,7 +156,8 @@ export const bulkSaveLogs = async (
       log.contentHash,
       log.parentHash
     );
-    results.push(saved);
+    savedLogs.push(saved);
   }
-  return results;
+
+  return savedLogs;
 };
