@@ -6,14 +6,18 @@ import { detectConflict } from '../utils/ConflictDetector';
 import { calculateHashSync } from '../utils/HashUtil';
 import { loadFromStorage, saveToStorage } from '../utils/StorageUtil';
 import type { AppDispatch, RootState } from '.';
+import { loginSuccess } from './auth';
 import {
   goToNextDate,
   goToPrevDate,
   goToToday,
+  hydrateRawLog,
   resolveConflict,
   setConflict,
+  setCurrentDateServerFetchComplete,
   setLastSyncedAt,
   setSyncStatus,
+  triggerCurrentDateFetch,
   updateRawLog,
 } from './logs';
 
@@ -44,6 +48,21 @@ startAppListening({
 
     try {
       await listenerApi.delay(2000);
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        listenerApi.dispatch(setSyncStatus('idle'));
+        return;
+      }
+
+      // 로그인 직후/날짜 이동 직후 서버 fetch가 끝나기 전에는 업로드 금지
+      const { isCurrentDateServerFetchComplete } = listenerApi.getState().logs;
+      if (!isCurrentDateServerFetchComplete) {
+        console.log(
+          '[middleware] skip upload until current date server fetch completes',
+        );
+        return;
+      }
 
       listenerApi.dispatch(setSyncStatus('syncing'));
 
@@ -81,15 +100,22 @@ startAppListening({
 
 // localstorage에서 불러오기 & Server Fetch
 startAppListening({
-  matcher: isAnyOf(goToToday, goToPrevDate, goToNextDate),
+  matcher: isAnyOf(
+    goToToday,
+    goToPrevDate,
+    goToNextDate,
+    loginSuccess,
+    triggerCurrentDateFetch,
+  ),
   effect: async (_, listenerApi) => {
+    listenerApi.dispatch(setCurrentDateServerFetchComplete(false));
     const { currentDate: changedDate } = listenerApi.getState().logs;
 
     // 1. Local Load
     const localData = loadFromStorage(changedDate);
-    listenerApi.dispatch(updateRawLog(localData.content));
+    listenerApi.dispatch(hydrateRawLog(localData.content));
     console.log(
-      `[middleware] loaded from local, dispatched update at ${changedDate}`,
+      `[middleware] loaded from local, dispatched hydrate at ${changedDate}`,
     );
 
     // 2. Server Fetch
@@ -100,6 +126,7 @@ startAppListening({
       if (!serverLog) {
         // 서버에 데이터 없음
         listenerApi.dispatch(setSyncStatus('idle'));
+        listenerApi.dispatch(setCurrentDateServerFetchComplete(true));
         return;
       }
 
@@ -130,6 +157,7 @@ startAppListening({
             parentHash: serverParent,
           });
           listenerApi.dispatch(setSyncStatus('synced'));
+          listenerApi.dispatch(setCurrentDateServerFetchComplete(true));
           return;
 
         case 'FAST_FORWARD':
@@ -138,12 +166,13 @@ startAppListening({
               `  Local: ${localHash.substring(0, 8)}\n` +
               `  Server: ${serverHash.substring(0, 8)} (parent: ${serverParent?.substring(0, 8)})`,
           );
-          listenerApi.dispatch(updateRawLog(serverContent));
+          listenerApi.dispatch(hydrateRawLog(serverContent));
           listenerApi.dispatch(setLastSyncedAt(serverUpdatedAt));
           saveToStorage(changedDate, serverContent, {
             parentHash: serverParent,
           });
           listenerApi.dispatch(setSyncStatus('synced'));
+          listenerApi.dispatch(setCurrentDateServerFetchComplete(true));
           return;
 
         case 'LOCAL_AHEAD': {
@@ -164,6 +193,7 @@ startAppListening({
               parentHash: result.data.contentHash,
             });
             listenerApi.dispatch(setSyncStatus('synced'));
+            listenerApi.dispatch(setCurrentDateServerFetchComplete(true));
           } else {
             listenerApi.dispatch(setSyncStatus('error'));
           }
@@ -188,6 +218,7 @@ startAppListening({
             }),
           );
           listenerApi.dispatch(setSyncStatus('error'));
+          listenerApi.dispatch(setCurrentDateServerFetchComplete(true));
           return;
       }
     } catch (e) {

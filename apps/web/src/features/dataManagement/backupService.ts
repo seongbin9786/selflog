@@ -68,9 +68,39 @@ const matchesStoredContent = (stored: string | null, expected: string) => {
 const migrateLegacyBackup = (
   data: Record<string, unknown>,
 ): BackupData | null => {
-  // If it already has version field, it's the new format
-  if ('version' in data && 'logs' in data) {
-    return data as unknown as BackupData;
+  // 신형 포맷:
+  // 1) 완전한 형태 { version, exportedAt, logs, settings }
+  // 2) 축약 형태 { logs, settings? } 도 허용
+  if ('logs' in data && typeof data.logs === 'object' && data.logs !== null) {
+    const rawLogs = data.logs as Record<string, unknown>;
+    const logs: Record<string, string> = {};
+
+    Object.entries(rawLogs).forEach(([key, value]) => {
+      if (LOG_DATE_REGEX.test(key) && typeof value === 'string') {
+        logs[key] = value;
+      }
+    });
+
+    const rawSettings =
+      'settings' in data && typeof data.settings === 'object' && data.settings
+        ? (data.settings as Record<string, unknown>)
+        : {};
+    const settings: Record<string, string> = {};
+    Object.entries(rawSettings).forEach(([key, value]) => {
+      if (typeof value === 'string' && SETTING_KEYS.includes(key)) {
+        settings[key] = value;
+      }
+    });
+
+    return {
+      version: typeof data.version === 'number' ? data.version : BACKUP_VERSION,
+      exportedAt:
+        typeof data.exportedAt === 'string'
+          ? data.exportedAt
+          : new Date().toISOString(),
+      logs,
+      settings,
+    };
   }
 
   // Check if this looks like a legacy format (has date keys at root level)

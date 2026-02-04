@@ -5,7 +5,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addLogEntry, createLogItem } from '../../features/RawLogEditor';
 import { useShake } from '../../hooks/useShake';
 import { RootState } from '../../store';
-import { updateRawLog } from '../../store/logs';
+import {
+  hydrateRawLog,
+  refreshDerivedLogs,
+  updateRawLog,
+} from '../../store/logs';
 import {
   clearRestNotification,
   setRestNotification,
@@ -16,6 +20,7 @@ import {
   addProductionStartListener,
 } from '../../utils/commandEvents';
 import { StorageListener } from '../../utils/StorageListener';
+import { loadFromStorage } from '../../utils/StorageUtil';
 import {
   getCurrentTimeStringConsideringMaxTime,
   getMaxTimeFromLogs,
@@ -65,11 +70,11 @@ export const TextLogContainer = () => {
   useEffect(
     function updateChartEvery30Seconds() {
       const timer = setInterval(() => {
-        dispatch(updateRawLog(rawLogs));
+        dispatch(refreshDerivedLogs());
       }, 30_000);
       return () => clearInterval(timer);
     },
-    [rawLogs, dispatch],
+    [dispatch],
   );
 
   // TODO: 이게 무슨 동작인지 확인하기
@@ -205,9 +210,12 @@ export const TextLogContainer = () => {
   // handleDateChange를 하지 말고, 여기서 return을 해서 cleanup을 하도록 하면 prevDate 만들 필요 없음.
   // https://legacy.reactjs.org/docs/hooks-faq.html#how-to-get-the-previous-props-or-state
   useEffect(() => {
-    storageListener.install(currentDate, setRawLogs);
+    storageListener.install(currentDate, () => {
+      const localData = loadFromStorage(currentDate);
+      dispatch(hydrateRawLog(localData.content));
+    });
     checkboxRef.current?.focus();
-  }, [currentDate, setRawLogs]);
+  }, [currentDate, dispatch]);
 
   const handleQuickAppend = useCallback(
     (isProductiveLog: boolean, message: string) => {

@@ -12,11 +12,20 @@ import {
 
 import { getSummary } from '../../utils/DailySummaryUtil';
 
-// 이 데이터를 어떻게 가져올지도 고민해야 함
-// 데이터를 얼마나 가져올지 UI도 고민해야 함
-const data = getSummary();
+const getSummarySafely = () => {
+  try {
+    return getSummary();
+  } catch (error) {
+    console.error('Failed to get summary data:', error);
+    return [];
+  }
+};
 
-const gradientOffset = () => {
+const calculateGradientOffset = (
+  data: { productiveMinutes: number; wastedMinutes: number }[],
+) => {
+  if (data.length === 0) return 0;
+
   const dataMax = Math.max(
     ...data.map((d) => d.productiveMinutes - d.wastedMinutes),
   );
@@ -34,9 +43,19 @@ const gradientOffset = () => {
   return dataMax / (dataMax - dataMin);
 };
 
-const off = gradientOffset();
-
 export const DailySummaryChart = () => {
+  const data = getSummarySafely();
+  const off = calculateGradientOffset(data);
+
+  // 빈 데이터 처리
+  if (data.length === 0) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <p className="text-gray-500">아직 기록된 데이터가 없습니다.</p>
+      </div>
+    );
+  }
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart

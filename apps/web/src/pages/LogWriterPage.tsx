@@ -1,6 +1,6 @@
 import { Bell, Timer } from 'lucide-react';
-import { useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 
 import { AuthHeader } from '../components/auth/AuthHeader';
 import { ConflictDialog } from '../components/common/ConflictDialog';
@@ -17,10 +17,12 @@ import {
 import { SoundSettingsDialog } from '../features/soundSettings';
 import { ThemeSelector } from '../features/theme/ThemeSelector';
 import { RootState } from '../store';
+import { triggerCurrentDateFetch } from '../store/logs';
 
 export const LogWriterPage = () => {
   // 휴식 알림 시스템 활성화
   useRestNotification();
+  const dispatch = useDispatch();
 
   const [isSoundSettingsOpen, setIsSoundSettingsOpen] = useState(false);
   const [isDataManagementOpen, setIsDataManagementOpen] = useState(false);
@@ -34,6 +36,16 @@ export const LogWriterPage = () => {
   const currentNotification = useSelector(
     (state: RootState) => state.restNotification.currentNotification,
   );
+  const isAuthenticated = useSelector(
+    (state: RootState) => state.auth.isAuthenticated,
+  );
+
+  // 로그인 상태에서 현재 날짜를 서버와 즉시 동기화
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(triggerCurrentDateFetch());
+    }
+  }, [dispatch, isAuthenticated]);
 
   // 잔여 시간 계산
   const { remainingTime, isOvertime } = useRemainingTime(currentNotification);
