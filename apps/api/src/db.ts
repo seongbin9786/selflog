@@ -1,8 +1,5 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 let docClient: DynamoDBDocumentClient | null = null;
 

@@ -1,6 +1,7 @@
 service: my-time-api
 
 frameworkVersion: "3"
+useDotenv: true
 
 provider:
   name: aws
@@ -10,11 +11,29 @@ provider:
   memorySize: 256
   timeout: 10
 
+  httpApi:
+    cors:
+      allowedOrigins:
+        - ${self:custom.webOrigin.${self:provider.stage}, self:custom.webOrigin.dev}
+      allowedHeaders:
+        - Content-Type
+        - Authorization
+      allowedMethods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      allowCredentials: false
+      maxAge: 86400
+
   environment:
     SLS_STAGE: ${self:provider.stage}
     DYNAMODB_TABLE_USERS: ${self:custom.usersTableName}
     DYNAMODB_TABLE: ${self:custom.logsTableName}
-    JWT_SECRET: ${env:JWT_SECRET, 'your-secret-key-change-in-production'}
+    DYNAMODB_TABLE_BACKUPS: ${self:custom.logBackupsTableName}
+    JWT_SECRET: ${env:JWT_SECRET}
+    ALLOWED_ORIGINS: ${self:custom.webOrigin.${self:provider.stage}, self:custom.webOrigin.dev}
     IS_OFFLINE: ${self:custom.isOffline.${self:provider.stage}, 'false'}
 
   iam:
@@ -31,10 +50,16 @@ provider:
           Resource:
             - !GetAtt UsersTable.Arn
             - !GetAtt LogsTable.Arn
+            - !GetAtt LogBackupsTable.Arn
 
 custom:
   usersTableName: my-time-users-${self:provider.stage}
   logsTableName: my-time-logs-${self:provider.stage}
+  logBackupsTableName: my-time-log-backups-${self:provider.stage}
+  webOrigin:
+    local: http://localhost:5173
+    dev: ${env:WEB_ORIGIN, 'https://d26x4qtxlzxa3w.cloudfront.net'}
+    prod: ${env:WEB_ORIGIN, 'https://d26x4qtxlzxa3w.cloudfront.net'}
 
   isOffline:
     local: "true"
@@ -45,14 +70,6 @@ custom:
     httpPort: 3000
     noPrependStageInUrl: true
     reloadHandler: true
-
-  customDomain:
-    domainName: api.yourdomain.com
-    certificateName: "*.yourdomain.com"
-    basePath: ""
-    stage: ${self:provider.stage}
-    createRoute53Record: false
-    endpointType: "regional"
 
   dynamodb:
     stages:
@@ -79,7 +96,6 @@ functions:
 plugins:
   - serverless-dynamodb
   - serverless-offline
-  - serverless-domain-manager
 
 resources:
   Resources:
@@ -112,6 +128,25 @@ resources:
           - AttributeName: userId
             KeyType: HASH
           - AttributeName: date
+            KeyType: RANGE
+        Tags:
+          - Key: Environment
+            Value: ${self:provider.stage}
+
+    LogBackupsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.logBackupsTableName}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: backupId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+          - AttributeName: backupId
             KeyType: RANGE
         Tags:
           - Key: Environment
