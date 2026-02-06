@@ -31,9 +31,6 @@ Thumbs.db
 .env.*
 !.env.example
 
-# Serverless Config (Local)
-serverless.yml
-
 # Temporary Files
 tmp/
 temp/

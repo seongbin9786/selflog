@@ -53,6 +53,22 @@ Full AWS 스택으로 배포됩니다 (S3 + CloudFront + Lambda + DynamoDB)
 
 상세한 배포 가이드는 **[DEPLOYMENT.md](./DEPLOYMENT.md)** 참고
 
+기본 운영 도메인:
+
+- Web: CloudFront 도메인
+- API: API Gateway `execute-api` 도메인
+- 커스텀 도메인: 선택 사항
+
+### CD (GitHub Actions)
+
+`main` push 시 `.github/workflows/deploy.yml`로 프로덕션 자동 배포가 실행됩니다.
+
+필수 GitHub Secrets:
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `JWT_SECRET`
+
 ## 🛠️ 기술 스택
 
 ### 프론트엔드

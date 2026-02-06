@@ -1,0 +1,112 @@
+name: Deploy Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Resolve web origin for API CORS
+        id: web-origin
+        shell: bash
+        run: |
+          set -euo pipefail
+          WEB_DOMAIN="$(aws cloudformation describe-stacks \
+            --stack-name my-time-web-prod \
+            --region ap-northeast-2 \
+            --query 'Stacks[0].Outputs[?OutputKey==`CloudFrontURL`].OutputValue' \
+            --output text 2>/dev/null || true)"
+
+          if [[ -z "${WEB_DOMAIN}" || "${WEB_DOMAIN}" == "None" ]]; then
+            WEB_ORIGIN="https://d26x4qtxlzxa3w.cloudfront.net"
+          else
+            WEB_ORIGIN="https://${WEB_DOMAIN}"
+          fi
+
+          echo "web_origin=${WEB_ORIGIN}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy API (prod)
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          WEB_ORIGIN: ${{ steps.web-origin.outputs.web_origin }}
+        run: pnpm deploy:api:prod
+
+      - name: Resolve API URL for web build
+        id: api-url
+        shell: bash
+        run: |
+          set -euo pipefail
+          API_URL="$(aws cloudformation describe-stacks \
+            --stack-name my-time-api-prod \
+            --region ap-northeast-2 \
+            --query 'Stacks[0].Outputs[?OutputKey==`HttpApiUrl`].OutputValue' \
+            --output text)"
+
+          if [[ -z "${API_URL}" || "${API_URL}" == "None" ]]; then
+            echo "Failed to resolve HttpApiUrl from my-time-api-prod" >&2
+            exit 1
+          fi
+
+          echo "api_url=${API_URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy Web (prod)
+        env:
+          VITE_API_URL: ${{ steps.api-url.outputs.api_url }}
+        run: pnpm deploy:web:prod
+
+      - name: Smoke test API
+        shell: bash
+        run: |
+          set -euo pipefail
+          API_URL="${{ steps.api-url.outputs.api_url }}"
+          WEB_ORIGIN="${{ steps.web-origin.outputs.web_origin }}"
+
+          BODY="$(curl -fsS "${API_URL}/")"
+          if [[ "${BODY}" != "Hello from Hono!" ]]; then
+            echo "Unexpected API root response: ${BODY}" >&2
+            exit 1
+          fi
+
+          PREFLIGHT="$(curl -sS -i -X OPTIONS "${API_URL}/auth/login" \
+            -H "Origin: ${WEB_ORIGIN}" \
+            -H "Access-Control-Request-Method: POST" \
+            -H "Access-Control-Request-Headers: content-type,authorization")"
+
+          echo "${PREFLIGHT}" | grep -i "access-control-allow-origin: ${WEB_ORIGIN}" >/dev/null
+
+      - name: Smoke test Web
+        shell: bash
+        run: |
+          set -euo pipefail
+          WEB_ORIGIN="${{ steps.web-origin.outputs.web_origin }}"
+          curl -fsS "${WEB_ORIGIN}" >/dev/null

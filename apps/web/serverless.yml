@@ -1,6 +1,7 @@
 service: my-time-web
 
 frameworkVersion: '3'
+useDotenv: true
 
 provider:
   name: aws
@@ -9,13 +10,12 @@ provider:
   stage: ${opt:stage, 'dev'}
 
 custom:
-  bucketName: my-time-web-${self:provider.stage}
+  bucketName: my-time-web-sb-${self:provider.stage}
 
   s3Sync:
     - bucketName: ${self:custom.bucketName}
       localDir: dist
       deleteRemoved: true
-      acl: public-read
       params:
         - index.html:
             CacheControl: 'no-cache'
@@ -30,11 +30,11 @@ custom:
 
 plugins:
   - serverless-s3-sync
-  - serverless-cloudfront-invalidate
+  # [이유] CloudFront Distribution ID를 자동으로 찾지 못하는 문제 등으로 인해 배포 실패 발생. 캐시 무효화는 수동으로 진행하거나 추후 설정.
+  # - serverless-cloudfront-invalidate  # 설정 필요, 일단 비활성화
 
 resources:
   Resources:
-    # S3 버킷 - 정적 웹사이트 호스팅
     WebsiteBucket:
       Type: AWS::S3::Bucket
       Properties:
@@ -57,7 +57,6 @@ resources:
               AllowedHeaders:
                 - '*'
 
-    # S3 버킷 정책 - 퍼블릭 읽기 권한
     WebsiteBucketPolicy:
       Type: AWS::S3::BucketPolicy
       Properties:
@@ -71,7 +70,6 @@ resources:
                 - s3:GetObject
               Resource: !Sub '${WebsiteBucket.Arn}/*'
 
-    # CloudFront Distribution
     WebsiteCloudFront:
       Type: AWS::CloudFront::Distribution
       Properties:
@@ -79,13 +77,23 @@ resources:
           Enabled: true
           DefaultRootObject: index.html
           Comment: My Time Web App - ${self:provider.stage}
-          PriceClass: PriceClass_100
+          PriceClass: PriceClass_All # 전 세계 모든 엣지 로케이션
           HttpVersion: http2and3
+
+          # Custom Domain Configuration (수동 설정 시 주석 처리)
+          # [이유] AWS 콘솔에서 수동으로 도메인을 연결하기 위해 자동 설정 주석 처리.
+          # Aliases:
+          #   - ${env:WEB_DOMAIN_NAME}
+          # ViewerCertificate:
+          #   AcmCertificateArn: ${env:ACM_CERTIFICATE_ARN}
+          #   SslSupportMethod: sni-only
+          #   MinimumProtocolVersion: TLSv1.2_2021
+          ViewerCertificate:
+            CloudFrontDefaultCertificate: true
+
           Origins:
             - Id: S3Origin
-              DomainName: !GetAtt WebsiteBucket.DomainName
-              S3OriginConfig:
-                OriginAccessIdentity: ''
+              DomainName: !Sub '${WebsiteBucket}.s3-website.${AWS::Region}.amazonaws.com'
               CustomOriginConfig:
                 HTTPPort: 80
                 HTTPSPort: 443
