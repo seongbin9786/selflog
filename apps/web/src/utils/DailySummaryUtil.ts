@@ -1,18 +1,24 @@
 import { minutesToTimeString } from './DateUtil';
 import { createLogsFromString } from './LogConverter';
+import { loadFromStorage } from './StorageUtil';
 
 const dateStringRegExp = /\d\d\d\d-\d\d-\d\d/;
 
 export const getSummary = () => {
   // 1. LocalStorage에서 날짜 key만 추출
-  const allLocalStorageJson = { ...localStorage };
-  const allLogsKeys = Object.keys(allLocalStorageJson).filter((storageKey) => {
-    return storageKey.match(dateStringRegExp);
-  });
+  const allLogsKeys: string[] = [];
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.match(dateStringRegExp)) {
+      allLogsKeys.push(key);
+    }
+  }
 
   // 2. 날짜 key로 차트에 사용할 배열 생성
   const allLogs = allLogsKeys.map((date) => {
-    const logs = createLogsFromString(allLocalStorageJson[date], date);
+    const { content } = loadFromStorage(date);
+    const logs = createLogsFromString(content, date);
     if (logs.length === 0) {
       // 빈 문자열이었던 경우
       return {
