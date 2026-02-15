@@ -79,4 +79,136 @@ describe('backupService', () => {
       expect(saveAs).not.toHaveBeenCalled();
     });
   });
+
+  describe('importBackup', () => {
+    const mockStorage: Record<string, string> = {};
+    const storageMock = {
+      setItem: vi.fn((key, value) => {
+        mockStorage[key] = value;
+      }),
+      getItem: vi.fn((key) => mockStorage[key] || null),
+      removeItem: vi.fn((key) => {
+        delete mockStorage[key];
+      }),
+      clear: vi.fn(() => {
+        Object.keys(mockStorage).forEach((k) => delete mockStorage[k]);
+      }),
+      key: vi.fn((i) => Object.keys(mockStorage)[i] || null),
+      length: 0,
+    };
+
+    beforeEach(() => {
+      Object.keys(mockStorage).forEach((k) => delete mockStorage[k]);
+      vi.clearAllMocks();
+
+      Object.defineProperty(storageMock, 'length', {
+        get: () => Object.keys(mockStorage).length,
+        configurable: true,
+      });
+
+      vi.stubGlobal('localStorage', storageMock);
+
+      // Mock FileReader to run synchronously for easier testing
+      class MockFileReader {
+        onload: (e: Partial<ProgressEvent<FileReader>>) => void = () => {};
+        readAsText(file: File & { _content?: string }) {
+          // Sync call to avoid promise race in tests
+          this.onload({ target: { result: file._content || '' } } as Partial<
+            ProgressEvent<FileReader>
+          >);
+        }
+      }
+      vi.stubGlobal('FileReader', MockFileReader);
+      global.fetch = vi.fn();
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    const createMockFile = (content: Record<string, unknown>, name: string) => {
+      const json = JSON.stringify(content);
+      const file = new File([json], name, { type: 'application/json' });
+      // @ts-expect-error - 로컬 환경 FileReader 모킹을 위해 내용 직접 주입
+      file._content = json;
+      return file;
+    };
+
+    it('should import new format backup', async () => {
+      const mockBackup = {
+        logs: { '2025-12-25': 'log content' },
+        settings: { 'app-theme': 'forest' },
+      };
+      const file = createMockFile(mockBackup, 'backup.json');
+
+      const { importBackup } = await import('./backupService');
+      await importBackup(file);
+
+      expect(storageMock.setItem).toHaveBeenCalledWith('app-theme', 'forest');
+      expect(storageMock.setItem).toHaveBeenCalledWith(
+        '2025-12-25',
+        expect.stringContaining('log content'),
+      );
+    });
+
+    it('should import legacy format backup and sync to server', async () => {
+      const legacyBackup = {
+        '2025-12-20': 'legacy log',
+        'app-theme': 'dark',
+      };
+      const file = createMockFile(legacyBackup, 'legacy.json');
+
+      // Mock token for sync
+      storageMock.setItem('token', 'mock-token');
+
+      // Mock bulkSaveLogsToServer
+      const mockSavedLogs = [
+        {
+          date: '2025-12-20',
+          content: 'legacy log',
+          contentHash: 'hash-123',
+          parentHash: null,
+          updatedAt: '2026-01-12T00:00:00Z',
+        },
+      ];
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, data: mockSavedLogs }),
+      } as Response);
+
+      const { importBackup } = await import('./backupService');
+      await importBackup(file);
+
+      // Verify server sync
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/raw-logs/bulk'),
+        expect.objectContaining({ method: 'POST' }),
+      );
+
+      // Verify localStorage (server-provided data should be stored)
+      expect(storageMock.setItem).toHaveBeenCalledWith(
+        '2025-12-20',
+        expect.stringContaining('hash-123'),
+      );
+    });
+
+    it('should clear existing logs before applying backup', async () => {
+      const backup = { logs: { '2025-12-25': 'new log' }, settings: {} };
+      const file = createMockFile(backup, 'backup.json');
+
+      // Setup existing logs
+      storageMock.setItem('2025-12-24', 'old log');
+
+      const { importBackup } = await import('./backupService');
+      await importBackup(file);
+
+      expect(storageMock.removeItem).toHaveBeenCalledWith('2025-12-24');
+      expect(storageMock.setItem).toHaveBeenCalledWith(
+        '2025-12-25',
+        expect.stringContaining('new log'),
+      );
+      // Ensure old log is gone from mockStorage
+      expect(mockStorage['2025-12-24']).toBeUndefined();
+    });
+  });
 });

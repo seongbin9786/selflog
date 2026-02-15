@@ -1,0 +1,150 @@
+service: my-time-web
+
+frameworkVersion: '3'
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ${opt:region, 'ap-northeast-2'}
+  stage: ${opt:stage, 'dev'}
+
+custom:
+  bucketName: my-time-web-sb-${self:provider.stage}
+
+  s3Sync:
+    - bucketName: ${self:custom.bucketName}
+      localDir: dist
+      deleteRemoved: true
+      params:
+        - index.html:
+            CacheControl: 'no-cache'
+        - '*.js':
+            CacheControl: 'public, max-age=31536000, immutable'
+        - '*.css':
+            CacheControl: 'public, max-age=31536000, immutable'
+        - '*.woff2':
+            CacheControl: 'public, max-age=31536000, immutable'
+        - 'assets/*':
+            CacheControl: 'public, max-age=31536000, immutable'
+
+plugins:
+  - serverless-s3-sync
+  # [이유] CloudFront Distribution ID를 자동으로 찾지 못하는 문제 등으로 인해 배포 실패 발생. 캐시 무효화는 수동으로 진행하거나 추후 설정.
+  # - serverless-cloudfront-invalidate  # 설정 필요, 일단 비활성화
+
+resources:
+  Resources:
+    WebsiteBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.bucketName}
+        WebsiteConfiguration:
+          IndexDocument: index.html
+          ErrorDocument: index.html
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          BlockPublicPolicy: false
+          IgnorePublicAcls: false
+          RestrictPublicBuckets: false
+        CorsConfiguration:
+          CorsRules:
+            - AllowedOrigins:
+                - '*'
+              AllowedMethods:
+                - GET
+                - HEAD
+              AllowedHeaders:
+                - '*'
+
+    WebsiteBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref WebsiteBucket
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: '*'
+              Action:
+                - s3:GetObject
+              Resource: !Sub '${WebsiteBucket.Arn}/*'
+
+    WebsiteCloudFront:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Enabled: true
+          DefaultRootObject: index.html
+          Comment: My Time Web App - ${self:provider.stage}
+          PriceClass: PriceClass_All # 전 세계 모든 엣지 로케이션
+          HttpVersion: http2and3
+
+          # Custom Domain Configuration (수동 설정 시 주석 처리)
+          # [이유] AWS 콘솔에서 수동으로 도메인을 연결하기 위해 자동 설정 주석 처리.
+          # Aliases:
+          #   - ${env:WEB_DOMAIN_NAME}
+          # ViewerCertificate:
+          #   AcmCertificateArn: ${env:ACM_CERTIFICATE_ARN}
+          #   SslSupportMethod: sni-only
+          #   MinimumProtocolVersion: TLSv1.2_2021
+          ViewerCertificate:
+            CloudFrontDefaultCertificate: true
+
+          Origins:
+            - Id: S3Origin
+              DomainName: !Sub '${WebsiteBucket}.s3-website.${AWS::Region}.amazonaws.com'
+              CustomOriginConfig:
+                HTTPPort: 80
+                HTTPSPort: 443
+                OriginProtocolPolicy: http-only
+          DefaultCacheBehavior:
+            TargetOriginId: S3Origin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+            Compress: true
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+            MinTTL: 0
+            DefaultTTL: 86400
+            MaxTTL: 31536000
+          CustomErrorResponses:
+            - ErrorCode: 403
+              ResponseCode: 200
+              ResponsePagePath: /index.html
+            - ErrorCode: 404
+              ResponseCode: 200
+              ResponsePagePath: /index.html
+
+  Outputs:
+    WebsiteBucketName:
+      Description: S3 Bucket Name
+      Value: !Ref WebsiteBucket
+      Export:
+        Name: ${self:service}-${self:provider.stage}-bucket-name
+
+    WebsiteURL:
+      Description: S3 Website URL
+      Value: !GetAtt WebsiteBucket.WebsiteURL
+      Export:
+        Name: ${self:service}-${self:provider.stage}-website-url
+
+    CloudFrontURL:
+      Description: CloudFront Distribution URL
+      Value: !GetAtt WebsiteCloudFront.DomainName
+      Export:
+        Name: ${self:service}-${self:provider.stage}-cloudfront-url
+
+    CloudFrontDistributionId:
+      Description: CloudFront Distribution ID
+      Value: !Ref WebsiteCloudFront
+      Export:
+        Name: ${self:service}-${self:provider.stage}-cloudfront-id

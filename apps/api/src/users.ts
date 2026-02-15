@@ -12,14 +12,14 @@ export const findUser = async (username: string): Promise<User | undefined> => {
     new GetCommand({
       TableName: TABLE_NAME,
       Key: { username },
-    }),
+    })
   );
   return result.Item as User;
 };
 
 export const createUser = async (
   username: string,
-  passwordHash: string,
+  passwordHash: string
 ): Promise<User> => {
   const user: User = {
     username,
@@ -31,7 +31,7 @@ export const createUser = async (
       TableName: TABLE_NAME,
       Item: user,
       ConditionExpression: "attribute_not_exists(username)",
-    }),
+    })
   );
 
   return user;

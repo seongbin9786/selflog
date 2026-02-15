@@ -23,6 +23,7 @@ export type LogState = {
   logsForCharts: Log[];
   syncStatus: 'idle' | 'pending' | 'syncing' | 'synced' | 'error';
   lastSyncedAt: string | null;
+  isCurrentDateServerFetchComplete: boolean;
   conflict: ConflictState | null; // 충돌 상태
 };
 
@@ -36,6 +37,7 @@ const initialState: LogState = {
   logsForCharts: createLogsFromString(initialLocalData.content, initialDate),
   syncStatus: 'idle',
   lastSyncedAt: null,
+  isCurrentDateServerFetchComplete: false,
   conflict: null,
 };
 
@@ -43,16 +45,22 @@ export const LogSlice = createSlice({
   name: 'logs',
   initialState,
   reducers: {
+    triggerCurrentDateFetch: (state) => {
+      state.isCurrentDateServerFetchComplete = false;
+    },
     goToToday: (state) => {
       state.currentDate = getTodayString();
+      state.isCurrentDateServerFetchComplete = false;
     },
     goToPrevDate: (state) => {
       state.currentDate = getDateStringDayBefore(state.currentDate);
+      state.isCurrentDateServerFetchComplete = false;
     },
     goToNextDate: (state) => {
       state.currentDate = getDateStringDayAfter(state.currentDate);
+      state.isCurrentDateServerFetchComplete = false;
     },
-    // 단순 string 공유
+    // 사용자 편집 전용 액션
     updateRawLog: (state, action: PayloadAction<string>) => {
       const newRawLogs = action.payload;
       const currentDate = state.currentDate;
@@ -64,11 +72,30 @@ export const LogSlice = createSlice({
         state.syncStatus = 'pending';
       }
     },
+    // 저장/동기화를 트리거하지 않는 hydrate 경로
+    hydrateRawLog: (state, action: PayloadAction<string>) => {
+      const content = action.payload;
+      state.rawLogs = content;
+      state.logsForCharts = createLogsFromString(content, state.currentDate);
+    },
+    // 30초 주기 차트 갱신용 (저장/동기화 금지)
+    refreshDerivedLogs: (state) => {
+      state.logsForCharts = createLogsFromString(
+        state.rawLogs,
+        state.currentDate,
+      );
+    },
     setSyncStatus: (state, action: PayloadAction<LogState['syncStatus']>) => {
       state.syncStatus = action.payload;
     },
     setLastSyncedAt: (state, action: PayloadAction<string>) => {
       state.lastSyncedAt = action.payload;
+    },
+    setCurrentDateServerFetchComplete: (
+      state,
+      action: PayloadAction<boolean>,
+    ) => {
+      state.isCurrentDateServerFetchComplete = action.payload;
     },
     setConflict: (state, action: PayloadAction<ConflictState | null>) => {
       state.conflict = action.payload;
@@ -96,9 +123,13 @@ export const {
     goToToday,
     goToPrevDate,
     goToNextDate,
+    triggerCurrentDateFetch,
     updateRawLog,
+    hydrateRawLog,
+    refreshDerivedLogs,
     setSyncStatus,
     setLastSyncedAt,
+    setCurrentDateServerFetchComplete,
     setConflict,
     resolveConflict,
   },

@@ -52,7 +52,11 @@ const initializeLogsWithFirstLog = (firstLog: TempLogFormat): Log[] => {
  * 기록 시각 별 누적 생산, 소비 시간 로그를 생성한다.
  */
 const generateAccumulatedLog = (rawLogs: string): Log[] => {
-  const splittedLogs = rawLogs.trim().split('\n'); // 첫, 끝 원소 제거 (빈 문자열임)
+  const trimmed = rawLogs.trim();
+  if (!trimmed) {
+    return [];
+  }
+  const splittedLogs = trimmed.split('\n'); // 첫, 끝 원소 제거 (빈 문자열임)
   const [firstLog, ...logs] = splittedLogs.map(timeDiffAndText);
   const { startedAt: wokeUpAt } = firstLog;
   const result = initializeLogsWithFirstLog(firstLog);
@@ -83,12 +87,33 @@ export const createLogsFromString = (
   targetDay: string,
   today: string = getTodayString(),
 ) => {
-  // 불필요한 예외 제거
-  if (rawLog.length === 0) {
+  // 빈 값 방어
+  if (!rawLog || rawLog.trim().length === 0) {
     return [];
   }
+
+  // JSON 문자열이 들어온 경우 content 필드만 추출
+  // - 새 localStorage 형식이 그대로 넘어오는 경우 대비
+  const maybeParsedJson = (() => {
+    const trimmed = rawLog.trim();
+    if (!trimmed.startsWith('{')) {
+      return null;
+    }
+    try {
+      const parsed = JSON.parse(trimmed) as { content?: unknown };
+      if (typeof parsed.content === 'string') {
+        return parsed.content;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const effectiveRawLog = maybeParsedJson ?? rawLog;
+
   try {
-    const formatted = convertTimeFormat(rawLog, targetDay, today);
+    const formatted = convertTimeFormat(effectiveRawLog, targetDay, today);
     const accumulated = generateAccumulatedLog(formatted);
     return divideLogsIntoTimeUnit(accumulated);
   } catch (e) {

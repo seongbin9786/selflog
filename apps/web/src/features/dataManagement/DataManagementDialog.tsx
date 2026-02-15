@@ -76,8 +76,14 @@ export const DataManagementDialog = ({ isOpen, onClose }: Props) => {
     if (!file) return;
 
     try {
-      await importBackup(file);
-      setImportStatus('복구 성공! 페이지를 새로고침합니다...');
+      const report = await importBackup(file);
+      const settingsInfo =
+        report.appliedSettings.length > 0
+          ? `설정 ${report.appliedSettings.join(', ')}`
+          : '설정 없음';
+      setImportStatus(
+        `복구 성공! 로그 ${report.appliedLogs}/${report.totalLogs} (빈 로그 ${report.skippedEmptyLogs}) · ${settingsInfo}`,
+      );
       setTimeout(() => {
         window.location.reload();
       }, 1500);

@@ -151,3 +151,47 @@ export async function signup(
     throw new Error('Signup failed');
   }
 }
+
+export async function bulkSaveLogsToServer(
+  logs: {
+    date: string;
+    content: string;
+    contentHash: string;
+    parentHash: string | null;
+  }[],
+): Promise<{
+  success: boolean;
+  data: {
+    date: string;
+    content: string;
+    contentHash: string;
+    parentHash: string | null;
+    updatedAt: string;
+  }[];
+} | null> {
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+
+  try {
+    const response = await fetch(`${API_URL}/raw-logs/bulk`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ logs }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+      }
+      return null;
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Failed to bulk save logs to server:', error);
+    return null;
+  }
+}

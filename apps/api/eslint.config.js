@@ -10,6 +10,7 @@ export default [
       ".serverless/**",
       "coverage/**",
       "eslint.config.js",
+      "tsup.config.ts",
       "scripts/**",
       "jest.config.js",
     ],

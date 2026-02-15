@@ -1,12 +1,13 @@
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 
+import { bulkSaveLogsToServer } from '../../services/LogService';
 import { calculateHashSync } from '../../utils/HashUtil';
 import { clearAllLogData, saveToStorage } from '../../utils/StorageUtil';
 import { BACKUP_VERSION, BackupData } from './types';
 
 const LOG_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-const SETTING_KEYS = ['soundSettings', 'targetPace'];
+const SETTING_KEYS = ['soundSettings', 'targetPace', 'app-theme'];
 
 export const createBackup = (): BackupData => {
   const logs: Record<string, string> = {};
@@ -38,6 +39,27 @@ export const downloadBackupInfo = (backup: BackupData) => {
   saveAs(blob, `my-time-backup-${new Date().toISOString().slice(0, 10)}.json`);
 };
 
+type ImportBackupReport = {
+  fileName: string;
+  fileSize: number;
+  totalLogs: number;
+  appliedLogs: number;
+  skippedEmptyLogs: number;
+  appliedSettings: string[];
+  failedLogs: string[];
+};
+
+const matchesStoredContent = (stored: string | null, expected: string) => {
+  if (stored === null) return false;
+  if (stored === expected) return true;
+  try {
+    const parsed = JSON.parse(stored) as { content?: unknown };
+    return typeof parsed.content === 'string' && parsed.content === expected;
+  } catch {
+    return false;
+  }
+};
+
 /**
  * Migrates legacy backup format to the new BackupData format.
  * Legacy format: flat object with date keys and settings mixed at the same level
@@ -46,9 +68,39 @@ export const downloadBackupInfo = (backup: BackupData) => {
 const migrateLegacyBackup = (
   data: Record<string, unknown>,
 ): BackupData | null => {
-  // If it already has version field, it's the new format
-  if ('version' in data && 'logs' in data) {
-    return data as unknown as BackupData;
+  // 신형 포맷:
+  // 1) 완전한 형태 { version, exportedAt, logs, settings }
+  // 2) 축약 형태 { logs, settings? } 도 허용
+  if ('logs' in data && typeof data.logs === 'object' && data.logs !== null) {
+    const rawLogs = data.logs as Record<string, unknown>;
+    const logs: Record<string, string> = {};
+
+    Object.entries(rawLogs).forEach(([key, value]) => {
+      if (LOG_DATE_REGEX.test(key) && typeof value === 'string') {
+        logs[key] = value;
+      }
+    });
+
+    const rawSettings =
+      'settings' in data && typeof data.settings === 'object' && data.settings
+        ? (data.settings as Record<string, unknown>)
+        : {};
+    const settings: Record<string, string> = {};
+    Object.entries(rawSettings).forEach(([key, value]) => {
+      if (typeof value === 'string' && SETTING_KEYS.includes(key)) {
+        settings[key] = value;
+      }
+    });
+
+    return {
+      version: typeof data.version === 'number' ? data.version : BACKUP_VERSION,
+      exportedAt:
+        typeof data.exportedAt === 'string'
+          ? data.exportedAt
+          : new Date().toISOString(),
+      logs,
+      settings,
+    };
   }
 
   // Check if this looks like a legacy format (has date keys at root level)
@@ -86,53 +138,14 @@ interface BulkLogInput {
   parentHash: string | null;
 }
 
-interface BulkSaveResponse {
-  success: boolean;
-  data?: Array<{
-    date: string;
-    contentHash: string;
-  }>;
-}
-
-/**
- * 여러 로그를 한 번에 서버에 저장합니다.
- */
-const bulkSaveLogsToServer = async (
-  logs: BulkLogInput[],
-): Promise<BulkSaveResponse | null> => {
-  const token = localStorage.getItem('token');
-  if (!token) return null;
-
-  const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/raw-logs/bulk`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ logs }),
-    },
-  );
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      localStorage.removeItem('token');
-    }
-    return null;
-  }
-
-  return response.json();
-};
-
 /**
  * 백업 파일에서 데이터를 복구합니다.
  * 로그인 상태(토큰 있음)면 서버에 동기화하고, 비로그인이면 로컬에만 저장합니다.
  *
  * @param file - 백업 JSON 파일
- * @returns 성공 여부
+ * @returns 복구 리포트
  */
-export const importBackup = async (file: File): Promise<boolean> => {
+export const importBackup = async (file: File): Promise<ImportBackupReport> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -151,6 +164,12 @@ export const importBackup = async (file: File): Promise<boolean> => {
         const logEntries = Object.entries(backup.logs).filter(([key]) =>
           LOG_DATE_REGEX.test(key),
         );
+        const emptyLogs = logEntries.filter(([, value]) => !value);
+
+        // 1. 기존 로그 데이터 삭제 (For both sync and local modes, to ensure clean state)
+        // 기존 HEAD는 selective update였지만, main은 clean & replace 방식이었음.
+        // 일관성을 위해 clearAllLogData 사용.
+        clearAllLogData();
 
         if (token) {
           // 로그인 상태: 서버 동기화 모드 (Bulk API 사용)
@@ -159,9 +178,6 @@ export const importBackup = async (file: File): Promise<boolean> => {
             logEntries.length,
             'logs',
           );
-
-          // 1. 기존 로그 데이터 삭제
-          clearAllLogData();
 
           // 2. Bulk API로 모든 로그를 한 번에 업로드
           const bulkLogs: BulkLogInput[] = logEntries.map(
@@ -178,7 +194,10 @@ export const importBackup = async (file: File): Promise<boolean> => {
           // 3. 서버 응답으로 localStorage 저장
           if (result?.success && result.data) {
             const serverDataMap = new Map(
-              result.data.map((item) => [item.date, item.contentHash]),
+              result.data.map((item: { date: string; contentHash: string }) => [
+                item.date,
+                item.contentHash,
+              ]),
             );
 
             logEntries.forEach(([date, logContent]) => {
@@ -199,19 +218,47 @@ export const importBackup = async (file: File): Promise<boolean> => {
           // 비로그인 상태: 로컬 저장만
           console.log('[importBackup] Not logged in - saving to local only');
 
-          logEntries.forEach(([key, value]) => {
-            localStorage.setItem(key, value);
+          logEntries.forEach(([date, logContent]) => {
+            saveToStorage(date, logContent);
           });
         }
 
-        // Apply settings (always local only)
+        // Apply settings
+        const appliedSettings: string[] = [];
         Object.entries(backup.settings).forEach(([key, value]) => {
           if (value && SETTING_KEYS.includes(key)) {
             localStorage.setItem(key, value);
+            appliedSettings.push(key);
           }
         });
 
-        resolve(true);
+        const failedLogs: string[] = [];
+        logEntries
+          .filter(([, value]) => value)
+          .forEach(([key, value]) => {
+            const stored = localStorage.getItem(key);
+            if (!matchesStoredContent(stored, String(value))) {
+              failedLogs.push(key);
+            }
+          });
+
+        const report: ImportBackupReport = {
+          fileName: file.name,
+          fileSize: file.size,
+          totalLogs: logEntries.length,
+          appliedLogs: logEntries.length - emptyLogs.length,
+          skippedEmptyLogs: emptyLogs.length,
+          appliedSettings,
+          failedLogs,
+        };
+
+        if (failedLogs.length > 0) {
+          console.error('[importBackup] verification failed:', report);
+          throw new Error('Import verification failed');
+        }
+
+        console.log('[importBackup] report:', report);
+        resolve(report);
       } catch (err) {
         console.error(err);
         reject(err);
