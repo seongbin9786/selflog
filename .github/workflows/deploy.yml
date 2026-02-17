@@ -39,6 +39,9 @@ jobs:
       - name: Resolve web origin for API CORS
         id: web-origin
         shell: bash
+        env:
+          WEB_DOMAIN_NAME: ${{ secrets.WEB_DOMAIN_NAME }}
+          ACM_CERTIFICATE_ARN: ${{ secrets.ACM_CERTIFICATE_ARN }}
         run: |
           set -euo pipefail
           WEB_DOMAIN="$(aws cloudformation describe-stacks \
@@ -48,12 +51,17 @@ jobs:
             --output text 2>/dev/null || true)"
 
           if [[ -z "${WEB_DOMAIN}" || "${WEB_DOMAIN}" == "None" ]]; then
-            WEB_ORIGIN="https://d26x4qtxlzxa3w.cloudfront.net"
+            WEB_DOMAIN="d26x4qtxlzxa3w.cloudfront.net"
+          fi
+
+          if [[ -n "${WEB_DOMAIN_NAME:-}" && -n "${ACM_CERTIFICATE_ARN:-}" ]]; then
+            WEB_ORIGIN="https://${WEB_DOMAIN_NAME}"
           else
             WEB_ORIGIN="https://${WEB_DOMAIN}"
           fi
 
           echo "web_origin=${WEB_ORIGIN}" >> "$GITHUB_OUTPUT"
+          echo "web_healthcheck_url=https://${WEB_DOMAIN}" >> "$GITHUB_OUTPUT"
 
       - name: Deploy API (prod)
         env:
@@ -82,6 +90,8 @@ jobs:
       - name: Deploy Web (prod)
         env:
           VITE_API_URL: ${{ steps.api-url.outputs.api_url }}
+          WEB_DOMAIN_NAME: ${{ secrets.WEB_DOMAIN_NAME }}
+          ACM_CERTIFICATE_ARN: ${{ secrets.ACM_CERTIFICATE_ARN }}
         run: pnpm deploy:web:prod
 
       - name: Smoke test API
@@ -108,5 +118,5 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          WEB_ORIGIN="${{ steps.web-origin.outputs.web_origin }}"
-          curl -fsS "${WEB_ORIGIN}" >/dev/null
+          WEB_HEALTHCHECK_URL="${{ steps.web-origin.outputs.web_healthcheck_url }}"
+          curl -fsS "${WEB_HEALTHCHECK_URL}" >/dev/null
