@@ -140,10 +140,12 @@ GET  /raw-logs/:date    - 날짜별 로그 조회
 | ---------------------- | ----------------------- | --------------------- |
 | `AWS_REGION`           | AWS 리전                | ap-northeast-2        |
 | `IS_OFFLINE`           | 로컬 DynamoDB 사용 여부 | false                 |
+| `SLS_STAGE`            | 스테이지 이름           | local                 |
 | `JWT_SECRET`           | JWT 서명 키(고정값)     | -                     |
-| `DYNAMODB_USERS_TABLE_NAME` | 사용자 테이블명    | {stage}-my-time-users |
-| `DYNAMODB_LOGS_TABLE_NAME`  | 로그 테이블명      | {stage}-my-time-logs  |
 | `PORT`                 | 서버 포트               | 3000                  |
+
+테이블 이름은 환경변수 오버라이드 없이 `SLS_STAGE` 기준으로 자동 결정됩니다.
+예: `local-my-time-users`, `prod-my-time-users`
 
 ## 테스트 환경 비교
 

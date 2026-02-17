@@ -39,9 +39,6 @@ provider:
 
   environment:
     SLS_STAGE: ${self:provider.stage}
-    DYNAMODB_USERS_TABLE_NAME: ${self:custom.usersTableName}
-    DYNAMODB_LOGS_TABLE_NAME: ${self:custom.logsTableName}
-    DYNAMODB_LOG_BACKUPS_TABLE_NAME: ${self:custom.logBackupsTableName}
     JWT_SECRET: ${env:JWT_SECRET}
     ALLOWED_ORIGINS: ${self:custom.webOrigin.${self:provider.stage}, self:custom.webOrigin.dev},http://localhost:3000,https://localhost:3000,http://localhost:5173,https://localhost:5173,http://localhost:5174,https://localhost:5174,http://localhost:6006,https://localhost:6006,http://localhost:4000,https://localhost:4000
     IS_OFFLINE: ${self:custom.isOffline.${self:provider.stage}, 'false'}

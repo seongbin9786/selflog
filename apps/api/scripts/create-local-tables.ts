@@ -9,7 +9,7 @@ import {
   ListTablesCommand,
 } from "@aws-sdk/client-dynamodb";
 
-const STAGE = process.env.SLS_STAGE || "dev";
+const STAGE = process.env.SLS_STAGE || "local";
 const MAX_RETRIES = 10;
 const RETRY_DELAY = 2000; // 2초
 

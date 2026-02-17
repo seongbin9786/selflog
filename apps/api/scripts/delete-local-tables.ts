@@ -5,7 +5,7 @@
 
 import { DeleteTableCommand, DynamoDBClient, ListTablesCommand } from '@aws-sdk/client-dynamodb';
 
-const STAGE = process.env.SLS_STAGE || 'dev';
+const STAGE = process.env.SLS_STAGE || 'local';
 
 const client = new DynamoDBClient({
   region: 'ap-northeast-2',

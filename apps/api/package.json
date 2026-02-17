@@ -4,8 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "dev:local": "IS_OFFLINE=true tsx watch src/index.ts",
+    "dev": "IS_OFFLINE=true SLS_STAGE=local tsx watch src/index.ts",
+    "dev:local": "IS_OFFLINE=true SLS_STAGE=local tsx watch src/index.ts",
     "build": "tsup --config tsup.config.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
