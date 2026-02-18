@@ -14,37 +14,34 @@ my-time/
 └── scripts/          # 배포 및 유틸리티 스크립트
 ```
 
-## 🚀 빠른 시작
+## 🚀 빠른 시작 (Getting Started)
 
-### 개발 환경 설정
+### 1) 로컬 실행
 
 ```bash
-# 패키지 설치
 pnpm install
-
-# 전체 개발 서버 실행
 pnpm dev
-
-# 개별 실행
-pnpm dev:web    # 프론트엔드만
-pnpm dev:api    # 백엔드만
 ```
 
-### 로컬 API 개발
+### 2) 빌드
 
 ```bash
-# Docker로 로컬 DynamoDB 실행
-cd apps/api
-pnpm db:start
+pnpm build
+```
 
-# 테이블 생성
-pnpm db:create-tables
+### 3) 프로덕션 배포 (가장 쉬운 방법)
 
-# API 서버 실행
-pnpm dev:local
+1. GitHub Secrets 설정: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `JWT_SECRET`
+2. (커스텀 도메인 선택 시) `WEB_DOMAIN_NAME`, `ACM_CERTIFICATE_ARN` 추가
+3. `main` 브랜치에 push 하면 자동 배포
 
-# 또는 한 번에
-pnpm local:start
+### 4) 수동 배포 (선택)
+
+```bash
+# 방법 A: aws configure로 자격증명 설정
+# 방법 B: AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_REGION 환경변수 설정
+export JWT_SECRET="your-fixed-secret"
+pnpm deploy:all:prod
 ```
 
 ## 📦 배포
@@ -138,6 +135,8 @@ JWT_SECRET=your-secret-key-here
 VITE_API_URL=https://your-api-gateway-url
 ```
 
+`pnpm build`(production 모드) 기준 파일이므로 `apps/web/.env.production`을 사용합니다.
+CI처럼 환경변수로 직접 주입하면 파일 없이도 배포 가능합니다.
 자세한 내용은 각 디렉토리의 `.env.example` 참고
 
 ## 💰 AWS 프리티어
