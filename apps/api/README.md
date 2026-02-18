@@ -89,8 +89,7 @@ pnpm sls:offline
 | 명령어                 | 설명                                             |
 | ---------------------- | ------------------------------------------------ |
 | `pnpm sls:offline`     | Serverless Offline 실행 (Lambda 환경 시뮬레이션) |
-| `pnpm sls:deploy`      | AWS dev 스테이지 배포                            |
-| `pnpm sls:deploy:prod` | AWS prod 스테이지 배포                           |
+| `pnpm sls:deploy`      | AWS 배포 (`--stage` 옵션으로 스테이지 지정)      |
 | `pnpm sls:remove`      | AWS 리소스 제거                                  |
 
 ## AWS 배포
@@ -106,10 +105,13 @@ aws configure
 
 ```bash
 # dev 환경 배포
-pnpm sls:deploy
+pnpm sls:deploy -- --stage dev
 
 # prod 환경 배포
-pnpm sls:deploy:prod
+pnpm sls:deploy -- --stage prod
+
+# (옵션 미지정 시 serverless.yml 기본 stage 사용)
+pnpm sls:deploy
 ```
 
 ### 리소스 제거
