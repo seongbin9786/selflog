@@ -58,7 +58,7 @@ pnpm run deploy:prod
 
 Full AWS 스택으로 배포됩니다 (S3 + CloudFront + Lambda + DynamoDB)
 
-상세한 배포 가이드는 **[DEPLOYMENT.md](./DEPLOYMENT.md)** 참고
+상세한 배포 가이드는 **[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)** 참고
 
 기본 운영 도메인:
 
@@ -154,7 +154,7 @@ VITE_API_URL=http://localhost:3000
 
 프로덕션 배포에서는 `VITE_API_URL`을 수동 입력하지 않습니다.
 배포 시 API Gateway endpoint를 자동 조회해 주입합니다.
-자세한 내용은 `DEPLOYMENT.md` 참고
+자세한 내용은 `docs/DEPLOYMENT.md` 참고
 
 ## 💰 AWS 프리티어
 
