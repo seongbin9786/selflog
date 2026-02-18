@@ -19,6 +19,7 @@ my-time/
 ### 1) 로컬 실행
 
 ```bash
+cp .env.example .env.local
 pnpm install
 pnpm dev
 ```
@@ -47,6 +48,8 @@ cp .env.production.example .env.production
 pnpm run deploy:prod
 # pnpm run deploy:dev
 ```
+
+배포는 저장소 루트에서만 허용됩니다.
 
 `deploy`는 루트 `.env` 파일을 자동 로드하고,
 `WEB_ORIGIN`/`VITE_API_URL`를 자동 계산해 배포합니다.
@@ -139,11 +142,15 @@ ACM_CERTIFICATE_ARN=arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/xxxx
 
 `dev` 배포 시에는 `.env.development`가 동일한 방식으로 사용됩니다.
 
-### 프론트엔드 로컬 개발 (apps/web/.env.local)
+### 로컬 공통 (루트 `.env.local`)
 
 ```bash
+JWT_SECRET=your-fixed-secret
 VITE_API_URL=http://localhost:3000
 ```
+
+앱 하위(`apps/web`, `apps/api`)에는 별도 `.env` 파일을 두지 않습니다.
+로컬/배포 모두 루트 `.env*` 파일만 사용합니다.
 
 프로덕션 배포에서는 `VITE_API_URL`을 수동 입력하지 않습니다.
 배포 시 API Gateway endpoint를 자동 조회해 주입합니다.

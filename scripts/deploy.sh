@@ -65,8 +65,8 @@ fi
 WEB_ORIGIN="https://${WEB_DOMAIN_NAME}"
 
 echo "Deploy API with WEB_ORIGIN=${WEB_ORIGIN}"
-WEB_ORIGIN="${WEB_ORIGIN}" JWT_SECRET="${JWT_SECRET}" \
-pnpm --filter my-time-api run sls:deploy -- --stage "${STAGE}" --region "${REGION}"
+MY_TIME_ROOT_DEPLOY=1 WEB_ORIGIN="${WEB_ORIGIN}" JWT_SECRET="${JWT_SECRET}" \
+pnpm --filter my-time-api run sls:deploy --stage "${STAGE}" --region "${REGION}"
 
 API_URL="$(
   aws cloudformation describe-stacks \
@@ -82,7 +82,7 @@ if [[ -z "${API_URL}" || "${API_URL}" == "None" ]]; then
 fi
 
 echo "Deploy Web with VITE_API_URL=${API_URL}"
-VITE_API_URL="${API_URL}" \
+MY_TIME_ROOT_DEPLOY=1 VITE_API_URL="${API_URL}" \
 WEB_DOMAIN_NAME="${WEB_DOMAIN_NAME:-}" \
 ACM_CERTIFICATE_ARN="${ACM_CERTIFICATE_ARN:-}" \
-pnpm --filter my-time-client run deploy -- --stage "${STAGE}" --region "${REGION}"
+pnpm --filter my-time-client run deploy --stage "${STAGE}" --region "${REGION}"

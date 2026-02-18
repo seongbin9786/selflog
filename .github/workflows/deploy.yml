@@ -54,13 +54,15 @@ jobs:
           echo "web_origin=${WEB_ORIGIN}" >> "$GITHUB_OUTPUT"
           echo "web_healthcheck_url=https://${WEB_DOMAIN_NAME}" >> "$GITHUB_OUTPUT"
 
-      - name: Deploy API (prod)
+      - name: Deploy (prod)
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          WEB_ORIGIN: ${{ steps.web-origin.outputs.web_origin }}
-        run: pnpm --filter my-time-api run sls:deploy -- --stage prod --region ap-northeast-2
+          WEB_DOMAIN_NAME: ${{ secrets.WEB_DOMAIN_NAME }}
+          ACM_CERTIFICATE_ARN: ${{ secrets.ACM_CERTIFICATE_ARN }}
+          AWS_REGION: ap-northeast-2
+        run: pnpm run deploy:prod
 
-      - name: Resolve API URL for web build
+      - name: Resolve API URL
         id: api-url
         shell: bash
         run: |
@@ -79,13 +81,6 @@ jobs:
           fi
 
           echo "api_url=${API_URL}" >> "$GITHUB_OUTPUT"
-
-      - name: Deploy Web (prod)
-        env:
-          VITE_API_URL: ${{ steps.api-url.outputs.api_url }}
-          WEB_DOMAIN_NAME: ${{ secrets.WEB_DOMAIN_NAME }}
-          ACM_CERTIFICATE_ARN: ${{ secrets.ACM_CERTIFICATE_ARN }}
-        run: pnpm --filter my-time-client run deploy -- --stage prod --region ap-northeast-2
 
       - name: Smoke test API
         shell: bash

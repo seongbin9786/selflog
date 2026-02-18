@@ -4,8 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "IS_OFFLINE=true SLS_STAGE=local tsx watch src/index.ts",
-    "dev:local": "IS_OFFLINE=true SLS_STAGE=local tsx watch src/index.ts",
+    "dev": "sh scripts/with-root-env.sh sh -c 'IS_OFFLINE=true SLS_STAGE=local tsx watch src/index.ts'",
+    "dev:local": "sh scripts/with-root-env.sh sh -c 'IS_OFFLINE=true SLS_STAGE=local tsx watch src/index.ts'",
     "build": "tsup --config tsup.config.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -15,8 +15,8 @@
     "db:delete-tables": "tsx scripts/delete-local-tables.ts",
     "db:reset": "pnpm db:delete-tables && pnpm db:create-tables",
     "local:start": "pnpm db:start && sleep 2 && pnpm db:create-tables && pnpm dev:local",
-    "sls:offline": "pnpm build && serverless offline --stage local",
-    "sls:deploy": "pnpm build && serverless deploy",
+    "sls:offline": "sh scripts/with-root-env.sh sh -c 'pnpm build && IS_OFFLINE=true SLS_STAGE=local serverless offline --stage local'",
+    "sls:deploy": "if [ \"${MY_TIME_ROOT_DEPLOY:-}\" != \"1\" ]; then echo \"Use repository-root deploy command: pnpm run deploy:prod or pnpm run deploy:dev\"; exit 1; fi; pnpm build && serverless deploy",
     "sls:remove": "serverless remove"
   },
   "dependencies": {
