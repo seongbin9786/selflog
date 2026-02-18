@@ -12,6 +12,8 @@ import { BACKUP_VERSION, BackupData } from './types';
 
 const LOG_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const SETTING_KEYS = ['soundSettings', 'targetPace', 'app-theme'];
+const DEFAULT_BACKUP_SOUND_TYPES = new Set(['beep', 'bell', 'chime']);
+const SOUND_SETTINGS_KEY = 'soundSettings';
 const STORAGE_WRAPPER_KEYS = new Set([
   'content',
   'contentHash',
@@ -19,6 +21,35 @@ const STORAGE_WRAPPER_KEYS = new Set([
   'localUpdatedAt',
 ]);
 const MAX_UNWRAP_DEPTH = 10;
+
+const hasLogContent = (value: string): boolean => value.length > 0;
+
+const sanitizeSoundSettingsForBackup = (raw: string): string | null => {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    const record = parsed as Record<string, unknown>;
+    const selectedSound =
+      typeof record.selectedSound === 'string' &&
+      DEFAULT_BACKUP_SOUND_TYPES.has(record.selectedSound)
+        ? record.selectedSound
+        : 'beep';
+    const infiniteRepeat =
+      typeof record.infiniteRepeat === 'boolean' ? record.infiniteRepeat : true;
+
+    return JSON.stringify({
+      selectedSound,
+      customSoundData: null,
+      customSoundName: null,
+      infiniteRepeat,
+    });
+  } catch {
+    return null;
+  }
+};
 
 const unwrapStorageWrapperOnce = (raw: string): string => {
   const trimmed = raw.trim();
@@ -69,10 +100,23 @@ export const createBackup = (): BackupData => {
     if (!key) continue;
 
     if (LOG_DATE_REGEX.test(key)) {
-      const content = loadFromStorage(key).content;
-      logEntries.push([key, normalizeLogContent(content)]);
+      const content = normalizeLogContent(loadFromStorage(key).content);
+      if (hasLogContent(content)) {
+        logEntries.push([key, content]);
+      }
     } else if (SETTING_KEYS.includes(key)) {
-      settings[key] = localStorage.getItem(key) || '';
+      const rawValue = localStorage.getItem(key);
+      if (rawValue === null) continue;
+
+      if (key === SOUND_SETTINGS_KEY) {
+        const sanitized = sanitizeSoundSettingsForBackup(rawValue);
+        if (sanitized) {
+          settings[key] = sanitized;
+        }
+        continue;
+      }
+
+      settings[key] = rawValue;
     }
   }
 
@@ -374,9 +418,9 @@ export const fetchAndDownloadServerBackup = async (token: string) => {
 
   const result = await response.json();
   const serverLogs = result.data as Array<{ date: string; content: string }>;
-  const sortedServerLogs = [...serverLogs].sort((a, b) =>
-    a.date.localeCompare(b.date),
-  );
+  const sortedServerLogs = [...serverLogs]
+    .filter(({ content }) => hasLogContent(content))
+    .sort((a, b) => a.date.localeCompare(b.date));
 
   const backupData: BackupData = {
     version: BACKUP_VERSION,

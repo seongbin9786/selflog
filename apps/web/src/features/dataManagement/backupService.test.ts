@@ -78,6 +78,28 @@ describe('backupService', () => {
 
       expect(saveAs).not.toHaveBeenCalled();
     });
+
+    it('should omit empty-date logs when exporting server backup json', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          data: [
+            { date: '2024-01-01', content: '' },
+            { date: '2024-01-02', content: 'log2' },
+          ],
+        }),
+      } as Response);
+
+      await fetchAndDownloadServerBackup(mockToken);
+
+      const [blob] = vi.mocked(saveAs).mock.calls[0];
+      const text = await (blob as Blob).text();
+      const data = JSON.parse(text);
+
+      expect(data.logs).toEqual({
+        '2024-01-02': 'log2',
+      });
+    });
   });
 
   describe('createBackup', () => {
@@ -157,6 +179,80 @@ describe('backupService', () => {
       const backup = createBackup();
 
       expect(backup.logs['2026-01-12']).toBe('[09:00] + 작업');
+    });
+
+    it('should omit empty-date logs when exporting json backup', async () => {
+      storageMock.setItem(
+        '2026-01-12',
+        JSON.stringify({
+          content: '',
+          contentHash: 'hash-empty',
+          parentHash: null,
+          localUpdatedAt: '2026-01-12T00:00:00Z',
+        }),
+      );
+      storageMock.setItem(
+        '2026-01-13',
+        JSON.stringify({
+          content: 'not empty',
+          contentHash: 'hash-value',
+          parentHash: null,
+          localUpdatedAt: '2026-01-13T00:00:00Z',
+        }),
+      );
+
+      const { createBackup } = await import('./backupService');
+      const backup = createBackup();
+
+      expect(backup.logs).toEqual({
+        '2026-01-13': 'not empty',
+      });
+    });
+
+    it('should keep default sound option and remove custom audio data in backup', async () => {
+      storageMock.setItem(
+        'soundSettings',
+        JSON.stringify({
+          selectedSound: 'custom',
+          customSoundData: 'data:audio/mp3;base64,AAAABBBBCCCC',
+          customSoundName: 'my-custom.mp3',
+          infiniteRepeat: false,
+        }),
+      );
+
+      const { createBackup } = await import('./backupService');
+      const backup = createBackup();
+      const soundSettings = JSON.parse(backup.settings.soundSettings!);
+
+      expect(soundSettings).toEqual({
+        selectedSound: 'beep',
+        customSoundData: null,
+        customSoundName: null,
+        infiniteRepeat: false,
+      });
+    });
+
+    it('should preserve non-custom sound option in backup', async () => {
+      storageMock.setItem(
+        'soundSettings',
+        JSON.stringify({
+          selectedSound: 'bell',
+          customSoundData: null,
+          customSoundName: null,
+          infiniteRepeat: true,
+        }),
+      );
+
+      const { createBackup } = await import('./backupService');
+      const backup = createBackup();
+      const soundSettings = JSON.parse(backup.settings.soundSettings!);
+
+      expect(soundSettings).toEqual({
+        selectedSound: 'bell',
+        customSoundData: null,
+        customSoundName: null,
+        infiniteRepeat: true,
+      });
     });
   });
 
