@@ -44,44 +44,37 @@ jobs:
           ACM_CERTIFICATE_ARN: ${{ secrets.ACM_CERTIFICATE_ARN }}
         run: |
           set -euo pipefail
-          WEB_DOMAIN="$(aws cloudformation describe-stacks \
-            --stack-name my-time-web-prod \
-            --region ap-northeast-2 \
-            --query 'Stacks[0].Outputs[?OutputKey==`CloudFrontURL`].OutputValue' \
-            --output text 2>/dev/null || true)"
-
-          if [[ -z "${WEB_DOMAIN}" || "${WEB_DOMAIN}" == "None" ]]; then
-            WEB_DOMAIN="d26x4qtxlzxa3w.cloudfront.net"
+          if [[ -z "${WEB_DOMAIN_NAME:-}" || -z "${ACM_CERTIFICATE_ARN:-}" ]]; then
+            echo "Custom domain is required for CI deployment." >&2
+            echo "Set both WEB_DOMAIN_NAME and ACM_CERTIFICATE_ARN secrets." >&2
+            exit 1
           fi
 
-          if [[ -n "${WEB_DOMAIN_NAME:-}" && -n "${ACM_CERTIFICATE_ARN:-}" ]]; then
-            WEB_ORIGIN="https://${WEB_DOMAIN_NAME}"
-          else
-            WEB_ORIGIN="https://${WEB_DOMAIN}"
-          fi
-
+          WEB_ORIGIN="https://${WEB_DOMAIN_NAME}"
           echo "web_origin=${WEB_ORIGIN}" >> "$GITHUB_OUTPUT"
-          echo "web_healthcheck_url=https://${WEB_DOMAIN}" >> "$GITHUB_OUTPUT"
+          echo "web_healthcheck_url=https://${WEB_DOMAIN_NAME}" >> "$GITHUB_OUTPUT"
 
       - name: Deploy API (prod)
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           WEB_ORIGIN: ${{ steps.web-origin.outputs.web_origin }}
-        run: pnpm deploy:api:prod
+        run: pnpm --filter my-time-api run sls:deploy -- --stage prod --region ap-northeast-2
 
       - name: Resolve API URL for web build
         id: api-url
         shell: bash
         run: |
           set -euo pipefail
+          API_STACK_NAME="prod-my-time-api"
+
           API_URL="$(aws cloudformation describe-stacks \
-            --stack-name my-time-api-prod \
+            --stack-name "${API_STACK_NAME}" \
             --region ap-northeast-2 \
             --query 'Stacks[0].Outputs[?OutputKey==`HttpApiUrl`].OutputValue' \
             --output text)"
 
           if [[ -z "${API_URL}" || "${API_URL}" == "None" ]]; then
-            echo "Failed to resolve HttpApiUrl from my-time-api-prod" >&2
+            echo "Failed to resolve HttpApiUrl from ${API_STACK_NAME}" >&2
             exit 1
           fi
 
@@ -92,7 +85,7 @@ jobs:
           VITE_API_URL: ${{ steps.api-url.outputs.api_url }}
           WEB_DOMAIN_NAME: ${{ secrets.WEB_DOMAIN_NAME }}
           ACM_CERTIFICATE_ARN: ${{ secrets.ACM_CERTIFICATE_ARN }}
-        run: pnpm deploy:web:prod
+        run: pnpm --filter my-time-client run deploy -- --stage prod --region ap-northeast-2
 
       - name: Smoke test API
         shell: bash

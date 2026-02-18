@@ -13,12 +13,9 @@
     "test:web": "pnpm --filter my-time-client test",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
-    "deploy:web": "pnpm --filter my-time-client run deploy",
-    "deploy:web:prod": "pnpm --filter my-time-client run deploy:prod",
-    "deploy:api": "pnpm --filter my-time-api sls:deploy",
-    "deploy:api:prod": "pnpm --filter my-time-api sls:deploy:prod",
-    "deploy:all": "pnpm deploy:api && pnpm deploy:web",
-    "deploy:all:prod": "pnpm deploy:api:prod && pnpm deploy:web:prod"
+    "deploy": "bash scripts/deploy.sh",
+    "deploy:prod": "pnpm run deploy -- prod",
+    "deploy:dev": "pnpm run deploy -- dev"
   },
   "devDependencies": {
     "tsx": "^4.7.1",

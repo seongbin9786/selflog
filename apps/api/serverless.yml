@@ -65,8 +65,8 @@ custom:
   logBackupsTableName: ${self:provider.stage}-my-time-log-backups
   webOrigin:
     local: http://localhost:5173
-    dev: ${env:WEB_ORIGIN, 'https://d26x4qtxlzxa3w.cloudfront.net'}
-    prod: ${env:WEB_ORIGIN, 'https://d26x4qtxlzxa3w.cloudfront.net'}
+    dev: ${env:WEB_ORIGIN}
+    prod: ${env:WEB_ORIGIN}
 
   isOffline:
     local: "true"

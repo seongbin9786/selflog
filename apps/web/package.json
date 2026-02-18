@@ -12,7 +12,6 @@
     "lint:fix": "eslint . --max-warnings 0 --fix",
     "preview": "vite preview",
     "deploy": "pnpm build && serverless deploy",
-    "deploy:prod": "pnpm build && serverless deploy --stage prod",
     "remove": "serverless remove"
   },
   "dependencies": {

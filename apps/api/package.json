@@ -17,7 +17,6 @@
     "local:start": "pnpm db:start && sleep 2 && pnpm db:create-tables && pnpm dev:local",
     "sls:offline": "pnpm build && serverless offline --stage local",
     "sls:deploy": "pnpm build && serverless deploy",
-    "sls:deploy:prod": "pnpm build && serverless deploy --stage prod",
     "sls:remove": "serverless remove"
   },
   "dependencies": {
