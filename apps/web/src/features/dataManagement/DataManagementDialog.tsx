@@ -235,7 +235,7 @@ export const DataManagementDialog = ({ isOpen, onClose }: Props) => {
                         서버 동기화 기능:
                       </h4>
                       <ul className="ml-2 list-inside list-disc space-y-1">
-                        <li>실시간 자동 동기화 (2초 디바운스)</li>
+                        <li>실시간 자동 동기화 (300ms 디바운스)</li>
                         <li>Git 스타일 충돌 감지 및 해결</li>
                         <li>여러 기기에서 동시 사용 가능</li>
                         <li>오프라인 작업 후 자동 병합</li>

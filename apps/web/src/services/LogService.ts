@@ -1,3 +1,5 @@
+import { calculateHashSync } from '../utils/HashUtil';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export interface ServerLogResponse {
@@ -22,6 +24,46 @@ export interface BackupItem {
   originalVersion?: number;
   backedUpAt: string;
 }
+
+type ServerLogData = NonNullable<ServerLogResponse['data']>;
+type PartialServerLogData = Partial<ServerLogData>;
+
+const isString = (value: unknown): value is string => typeof value === 'string';
+
+const normalizeServerLog = (
+  date: string,
+  payload: unknown,
+): ServerLogData | null => {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  const raw = payload as PartialServerLogData;
+  const content = isString(raw.content) ? raw.content : '';
+  const rawContentHash = isString(raw.contentHash) ? raw.contentHash : null;
+  const hasContentHash = !!rawContentHash && rawContentHash.length > 0;
+
+  // API 기본 응답({ date, content: '' })은 서버 데이터 없음으로 간주
+  if (!hasContentHash && content.length === 0 && !isString(raw.updatedAt)) {
+    return null;
+  }
+
+  const contentHash = hasContentHash
+    ? rawContentHash
+    : calculateHashSync(content);
+
+  return {
+    userId: isString(raw.userId) ? raw.userId : '',
+    date: isString(raw.date) && raw.date.length > 0 ? raw.date : date,
+    content,
+    contentHash,
+    parentHash: isString(raw.parentHash) ? raw.parentHash : null,
+    updatedAt: isString(raw.updatedAt)
+      ? raw.updatedAt
+      : new Date().toISOString(),
+    version: typeof raw.version === 'number' ? raw.version : 0,
+  };
+};
 
 export async function saveLogToServer(
   date: string,
@@ -114,9 +156,17 @@ export async function getLogFromServer(
       }
       return null;
     }
-    const data = await response.json();
-    console.log('[LogService] Server fetch response:', data);
-    return data;
+    const result = (await response.json()) as
+      | unknown
+      | { data?: unknown; success?: boolean };
+    const payload =
+      result && typeof result === 'object' && 'data' in result
+        ? (result as { data?: unknown }).data
+        : result;
+
+    const normalized = normalizeServerLog(date, payload);
+    console.log('[LogService] Server fetch response:', payload);
+    return normalized;
   } catch (error) {
     console.error('Failed to fetch log from server:', error);
     return null;

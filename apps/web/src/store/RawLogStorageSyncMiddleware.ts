@@ -33,6 +33,9 @@ export type AppStartListening = TypedStartListening<RootState, AppDispatch>;
 const startAppListening =
   RawLogStorageSyncMiddleware.startListening as AppStartListening;
 
+const shortHash = (value: string | null | undefined): string =>
+  typeof value === 'string' ? value.substring(0, 8) : 'null';
+
 // localstorage에 저장 & 배업 (Server Sync with Debounce)
 startAppListening({
   actionCreator: updateRawLog,
@@ -47,7 +50,7 @@ startAppListening({
     listenerApi.cancelActiveListeners();
 
     try {
-      await listenerApi.delay(2000);
+      await listenerApi.delay(300);
 
       const token = localStorage.getItem('token');
       if (!token) {
@@ -163,8 +166,8 @@ startAppListening({
         case 'FAST_FORWARD':
           console.log(
             `[FAST-FORWARD] Server is ahead\n` +
-              `  Local: ${localHash.substring(0, 8)}\n` +
-              `  Server: ${serverHash.substring(0, 8)} (parent: ${serverParent?.substring(0, 8)})`,
+              `  Local: ${shortHash(localHash)}\n` +
+              `  Server: ${shortHash(serverHash)} (parent: ${shortHash(serverParent)})`,
           );
           listenerApi.dispatch(hydrateRawLog(serverContent));
           listenerApi.dispatch(setLastSyncedAt(serverUpdatedAt));
@@ -178,8 +181,8 @@ startAppListening({
         case 'LOCAL_AHEAD': {
           console.log(
             `[LOCAL AHEAD] Pushing local to server\n` +
-              `  Server: ${serverHash.substring(0, 8)}\n` +
-              `  Local: ${localHash.substring(0, 8)} (parent: ${localParent?.substring(0, 8)})`,
+              `  Server: ${shortHash(serverHash)}\n` +
+              `  Local: ${shortHash(localHash)} (parent: ${shortHash(localParent)})`,
           );
           const result = await saveLogToServer(
             changedDate,
@@ -203,8 +206,8 @@ startAppListening({
         case 'CONFLICT_DIVERGED':
           console.warn(
             `[CONFLICT] Diverged from common ancestor\n` +
-              `  Local: ${localHash.substring(0, 8)} (parent: ${localParent?.substring(0, 8) || 'null'})\n` +
-              `  Server: ${serverHash.substring(0, 8)} (parent: ${serverParent?.substring(0, 8) || 'null'})\n` +
+              `  Local: ${shortHash(localHash)} (parent: ${shortHash(localParent)})\n` +
+              `  Server: ${shortHash(serverHash)} (parent: ${shortHash(serverParent)})\n` +
               `  Local time: ${localUpdatedAt}\n` +
               `  Server time: ${serverUpdatedAt}`,
           );
