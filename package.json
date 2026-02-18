@@ -13,6 +13,7 @@
     "test:web": "pnpm --filter my-time-client test",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
+    "fix:backup-json": "node scripts/fix-contaminated-backup.mjs",
     "deploy": "bash scripts/deploy.sh",
     "deploy:prod": "pnpm run deploy -- prod",
     "deploy:dev": "pnpm run deploy -- dev"
