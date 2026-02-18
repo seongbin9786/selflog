@@ -93,9 +93,9 @@ aws cloudformation describe-stacks \
 워크플로우 동작:
 
 1. AWS 자격증명 설정
-2. `my-time-web-prod`의 CloudFront URL 조회 -> `WEB_ORIGIN`으로 API 배포
+2. `WEB_DOMAIN_NAME`/`ACM_CERTIFICATE_ARN`이 있으면 커스텀 도메인을 `WEB_ORIGIN`으로 결정
 3. `my-time-api-prod`의 API URL 조회 -> `VITE_API_URL`로 Web 배포
-4. API/Web 스모크 테스트
+4. API 스모크 테스트 + CloudFront URL 기반 Web 스모크 테스트
 
 ### 3-1. GitHub Secrets
 
@@ -104,6 +104,11 @@ aws cloudformation describe-stacks \
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 - `JWT_SECRET`
+
+커스텀 웹 도메인 사용 시 추가 설정:
+
+- `WEB_DOMAIN_NAME` (예: `my-commit.com`)
+- `ACM_CERTIFICATE_ARN` (반드시 `us-east-1` 인증서 ARN)
 
 ---
 
@@ -149,7 +154,15 @@ curl -i https://{distribution}.cloudfront.net
 커스텀 도메인은 선택 사항입니다.
 
 - 기본 배포는 커스텀 도메인 없이 운영 가능
-- 필요 시 API Gateway/CloudFront 콘솔에서 별도 연결
-- Route53 없이 외부 DNS에서 CNAME 수동 설정 가능
+- IaC 기준 자동 연결(`WEB_DOMAIN_NAME` + `ACM_CERTIFICATE_ARN`) 지원
+- 외부 DNS 사용 시에는 수동 CNAME/ALIAS(또는 ALIAS flattening) 연결 필요
 
 커스텀 도메인 운영 시에는 인증서(ACM 리전 요건)와 CORS/환경변수를 함께 갱신해야 합니다.
+
+권장 절차:
+
+1. `us-east-1`에서 `my-commit.com` 인증서 발급 후 DNS 검증(`Issued`) 완료
+2. GitHub Secrets에 `WEB_DOMAIN_NAME`, `ACM_CERTIFICATE_ARN` 등록
+3. `main`에 배포 반영 (CloudFront Alias + 인증서 적용)
+4. 외부 DNS에서 `my-commit.com`을 CloudFront 배포 도메인으로 연결
+5. 배포 후 `https://my-commit.com` 접속 확인
