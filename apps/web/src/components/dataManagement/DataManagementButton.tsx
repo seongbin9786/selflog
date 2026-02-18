@@ -14,6 +14,8 @@ export const DataManagementButton = ({ onClick }: Props) => {
   const isAuthenticated = useSelector(
     (state: RootState) => state.auth.isAuthenticated,
   );
+  const isSyncAttempting =
+    isAuthenticated && (syncStatus === 'pending' || syncStatus === 'syncing');
 
   const [showToast, setShowToast] = useState(false);
   const [justSynced, setJustSynced] = useState(false);
@@ -52,28 +54,43 @@ export const DataManagementButton = ({ onClick }: Props) => {
       return <AlertCircle size={16} />;
     }
 
-    if (syncStatus === 'syncing' || justSynced) {
+    if (syncStatus === 'pending' || syncStatus === 'syncing' || justSynced) {
       return <DatabaseBackup size={16} />;
     }
 
     return <Database size={16} />;
   };
 
+  const syncAttemptLabel =
+    syncStatus === 'pending' ? '동기화 시도 대기 중...' : '동기화 시도 중...';
+  const buttonTitle =
+    isAuthenticated && isSyncAttempting ? syncAttemptLabel : '데이터 관리';
+
   return (
     <div className="relative">
       <button
         type="button"
         className={clsx('btn btn-circle btn-ghost transition-colors', {
-          'text-info': isAuthenticated && syncStatus === 'syncing',
+          'text-info': isAuthenticated && isSyncAttempting,
           'text-success': isAuthenticated && justSynced,
           'text-error':
             (isAuthenticated && syncStatus === 'error') || !isAuthenticated,
         })}
         onClick={onClick}
-        title="데이터 관리"
+        title={buttonTitle}
       >
         {getIcon()}
       </button>
+      {isAuthenticated && isSyncAttempting && (
+        <div className="animate-in fade-in slide-in-from-top-1 absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 duration-200">
+          <div className="relative">
+            <div className="whitespace-nowrap rounded-lg border border-info/40 bg-info/10 px-3 py-2 text-xs font-medium text-info shadow-lg">
+              {syncAttemptLabel}
+            </div>
+            <div className="absolute -top-[5px] left-1/2 h-2.5 w-2.5 -translate-x-1/2 rotate-45 border-l border-t border-info/40 bg-info/10"></div>
+          </div>
+        </div>
+      )}
       {showToast && (
         <div className="animate-in fade-in slide-in-from-top-1 absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 duration-200">
           <div className="whitespace-nowrap rounded-lg border border-success/30 bg-success/10 px-3 py-2 text-xs font-medium text-success shadow-lg">

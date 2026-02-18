@@ -19,7 +19,21 @@ import {
 import { createUser, findUser } from "./users";
 
 const app = new Hono();
-const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? "http://localhost:5173")
+const allowedOrigins = (
+  process.env.ALLOWED_ORIGINS ??
+  [
+    "http://localhost:3000",
+    "https://localhost:3000",
+    "http://localhost:5173",
+    "https://localhost:5173",
+    "http://localhost:5174",
+    "https://localhost:5174",
+    "http://localhost:6006",
+    "https://localhost:6006",
+    "http://localhost:4000",
+    "https://localhost:4000",
+  ].join(",")
+)
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
@@ -37,7 +51,10 @@ app.use(
   })
 );
 
-const JWT_SECRET = process.env.JWT_SECRET || "secretKey";
+const JWT_SECRET = process.env.JWT_SECRET?.trim();
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET must be set and fixed across deployments");
+}
 const jwtSigningKey = new TextEncoder().encode(JWT_SECRET);
 
 const createAccessToken = async (username: string) => {

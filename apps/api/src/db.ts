@@ -32,12 +32,8 @@ export const getDynamoDb = (): DynamoDBDocumentClient => {
   return docClient;
 };
 
-export const TABLE_NAME =
-  process.env.DYNAMODB_TABLE_USERS ||
-  `my-time-users-${process.env.SLS_STAGE || "dev"}`;
-export const LOGS_TABLE_NAME =
-  process.env.DYNAMODB_TABLE ||
-  `my-time-logs-${process.env.SLS_STAGE || "dev"}`;
-export const LOG_BACKUPS_TABLE_NAME =
-  process.env.DYNAMODB_TABLE_BACKUPS ||
-  `my-time-log-backups-${process.env.SLS_STAGE || "dev"}`;
+const stage = process.env.SLS_STAGE || "local";
+
+export const TABLE_NAME = `${stage}-my-time-users`;
+export const LOGS_TABLE_NAME = `${stage}-my-time-logs`;
+export const LOG_BACKUPS_TABLE_NAME = `${stage}-my-time-log-backups`;

@@ -1,7 +1,7 @@
 import './App.css';
 
 import { MinusCircle, PlusCircle } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { Command, CommandPalette } from './components/CommandPalette';
 import { useCommandPalette } from './hooks/useCommandPalette';
@@ -10,6 +10,10 @@ import { focusActivityInput } from './utils/commandEvents';
 
 export const App = () => {
   const { isOpen, close } = useCommandPalette();
+
+  useEffect(() => {
+    console.log(`[build version] ${__BUILD_VERSION__}`);
+  }, []);
 
   const commands: Command[] = useMemo(
     () => [

@@ -9,7 +9,7 @@ import {
   ListTablesCommand,
 } from "@aws-sdk/client-dynamodb";
 
-const STAGE = process.env.SLS_STAGE || "dev";
+const STAGE = process.env.SLS_STAGE || "local";
 const MAX_RETRIES = 10;
 const RETRY_DELAY = 2000; // 2초
 
@@ -28,7 +28,7 @@ const client = new DynamoDBClient({
 
 const tables = [
   {
-    TableName: `my-time-users-${STAGE}`,
+    TableName: `${STAGE}-my-time-users`,
     KeySchema: [{ AttributeName: "username", KeyType: "HASH" as const }],
     AttributeDefinitions: [
       { AttributeName: "username", AttributeType: "S" as const },
@@ -36,7 +36,7 @@ const tables = [
     BillingMode: "PAY_PER_REQUEST" as const,
   },
   {
-    TableName: `my-time-logs-${STAGE}`,
+    TableName: `${STAGE}-my-time-logs`,
     KeySchema: [
       { AttributeName: "userId", KeyType: "HASH" as const },
       { AttributeName: "date", KeyType: "RANGE" as const },
@@ -48,7 +48,7 @@ const tables = [
     BillingMode: "PAY_PER_REQUEST" as const,
   },
   {
-    TableName: `my-time-log-backups-${STAGE}`,
+    TableName: `${STAGE}-my-time-log-backups`,
     KeySchema: [
       { AttributeName: "userId", KeyType: "HASH" as const },
       { AttributeName: "backupId", KeyType: "RANGE" as const },

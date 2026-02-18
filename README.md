@@ -14,50 +14,56 @@ my-time/
 └── scripts/          # 배포 및 유틸리티 스크립트
 ```
 
-## 🚀 빠른 시작
+## 🚀 빠른 시작 (Getting Started)
 
-### 개발 환경 설정
+### 1) 로컬 실행
 
 ```bash
-# 패키지 설치
+cp .env.example .env.local
 pnpm install
-
-# 전체 개발 서버 실행
 pnpm dev
-
-# 개별 실행
-pnpm dev:web    # 프론트엔드만
-pnpm dev:api    # 백엔드만
 ```
 
-### 로컬 API 개발
+### 2) 빌드
 
 ```bash
-# Docker로 로컬 DynamoDB 실행
-cd apps/api
-pnpm db:start
-
-# 테이블 생성
-pnpm db:create-tables
-
-# API 서버 실행
-pnpm dev:local
-
-# 또는 한 번에
-pnpm local:start
+pnpm build
 ```
+
+### 3) 프로덕션 자동 배포 (GitHub Actions)
+
+1. GitHub Secrets 설정: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `JWT_SECRET`
+2. `us-east-1` ACM 인증서 발급 + DNS CNAME 검증 후 `WEB_DOMAIN_NAME`, `ACM_CERTIFICATE_ARN` 설정
+3. `main` 브랜치에 push 하면 자동 배포
+
+### 4) 프로덕션 수동 배포
+
+```bash
+# 1) 루트 배포 env 파일 생성/수정
+cp .env.production.example .env.production
+# dev면
+# cp .env.development.example .env.development
+
+# 2) 배포
+pnpm run deploy:prod
+# pnpm run deploy:dev
+```
+
+배포는 저장소 루트에서만 허용됩니다.
+
+`deploy`는 루트 `.env` 파일을 자동 로드하고,
+`WEB_ORIGIN`/`VITE_API_URL`를 자동 계산해 배포합니다.
 
 ## 📦 배포
 
 Full AWS 스택으로 배포됩니다 (S3 + CloudFront + Lambda + DynamoDB)
 
-상세한 배포 가이드는 **[DEPLOYMENT.md](./DEPLOYMENT.md)** 참고
+상세한 배포 가이드는 **[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)** 참고
 
 기본 운영 도메인:
 
-- Web: CloudFront 도메인
+- Web: 커스텀 도메인
 - API: API Gateway `execute-api` 도메인
-- 커스텀 도메인: 선택 사항
 
 ### CD (GitHub Actions)
 
@@ -68,6 +74,8 @@ Full AWS 스택으로 배포됩니다 (S3 + CloudFront + Lambda + DynamoDB)
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 - `JWT_SECRET`
+- `WEB_DOMAIN_NAME`
+- `ACM_CERTIFICATE_ARN`
 
 ## 🛠️ 기술 스택
 
@@ -118,27 +126,35 @@ pnpm lint             # 전체 린트
 pnpm lint:fix         # 린트 자동 수정
 
 # 배포
-pnpm deploy:all       # 전체 배포 (dev)
-pnpm deploy:all:prod  # 전체 배포 (prod)
-pnpm deploy:web       # 프론트엔드만 배포
-pnpm deploy:api       # 백엔드만 배포
+pnpm run deploy:prod     # 전체 배포 (prod)
+pnpm run deploy:dev      # 전체 배포 (dev)
 ```
 
 ## 🔐 환경 변수
 
-### 백엔드 (apps/api/.env)
+### 배포용 (루트 `.env.production`)
 
 ```bash
-JWT_SECRET=your-secret-key-here
+JWT_SECRET=your-fixed-secret
+WEB_DOMAIN_NAME=my-commit.com
+ACM_CERTIFICATE_ARN=arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/xxxx
 ```
 
-### 프론트엔드 (apps/web/.env.production)
+`dev` 배포 시에는 `.env.development`가 동일한 방식으로 사용됩니다.
+
+### 로컬 공통 (루트 `.env.local`)
 
 ```bash
-VITE_API_URL=https://your-api-gateway-url
+JWT_SECRET=your-fixed-secret
+VITE_API_URL=http://localhost:3000
 ```
 
-자세한 내용은 각 디렉토리의 `.env.example` 참고
+앱 하위(`apps/web`, `apps/api`)에는 별도 `.env` 파일을 두지 않습니다.
+로컬/배포 모두 루트 `.env*` 파일만 사용합니다.
+
+프로덕션 배포에서는 `VITE_API_URL`을 수동 입력하지 않습니다.
+배포 시 API Gateway endpoint를 자동 조회해 주입합니다.
+자세한 내용은 `docs/DEPLOYMENT.md` 참고
 
 ## 💰 AWS 프리티어
 

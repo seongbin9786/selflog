@@ -22,9 +22,11 @@ Hono 기반 서버리스 API (AWS Lambda + DynamoDB)
 ### 1. 환경 변수 설정
 
 ```bash
-# env.example을 .env로 복사
-cp env.example .env
+# 저장소 루트에서 실행
+cp .env.example .env.local
 ```
+
+`apps/api` 하위에 별도 `.env` 파일은 사용하지 않습니다.
 
 ### 2. 로컬 개발 서버 실행 (권장)
 
@@ -89,8 +91,7 @@ pnpm sls:offline
 | 명령어                 | 설명                                             |
 | ---------------------- | ------------------------------------------------ |
 | `pnpm sls:offline`     | Serverless Offline 실행 (Lambda 환경 시뮬레이션) |
-| `pnpm sls:deploy`      | AWS dev 스테이지 배포                            |
-| `pnpm sls:deploy:prod` | AWS prod 스테이지 배포                           |
+| `pnpm sls:deploy`      | 루트 배포 스크립트에서 내부 호출 전용            |
 | `pnpm sls:remove`      | AWS 리소스 제거                                  |
 
 ## AWS 배포
@@ -105,12 +106,14 @@ aws configure
 ### 배포
 
 ```bash
-# dev 환경 배포
-pnpm sls:deploy
+# 저장소 루트에서 실행
+pnpm run deploy:dev
 
-# prod 환경 배포
-pnpm sls:deploy:prod
+# 저장소 루트에서 실행
+pnpm run deploy:prod
 ```
+
+`apps/api` 디렉터리에서 직접 `pnpm sls:deploy` 실행은 차단되어 있습니다.
 
 ### 리소스 제거
 
@@ -140,10 +143,14 @@ GET  /raw-logs/:date    - 날짜별 로그 조회
 | ---------------------- | ----------------------- | --------------------- |
 | `AWS_REGION`           | AWS 리전                | ap-northeast-2        |
 | `IS_OFFLINE`           | 로컬 DynamoDB 사용 여부 | false                 |
-| `JWT_SECRET`           | JWT 서명 키             | -                     |
-| `DYNAMODB_TABLE_USERS` | 사용자 테이블명         | my-time-users-{stage} |
-| `DYNAMODB_TABLE`       | 로그 테이블명           | my-time-logs-{stage}  |
+| `SLS_STAGE`            | 스테이지 이름           | local                 |
+| `JWT_SECRET`           | JWT 서명 키(고정값)     | -                     |
 | `PORT`                 | 서버 포트               | 3000                  |
+
+테이블 이름은 환경변수 오버라이드 없이 `SLS_STAGE` 기준으로 자동 결정됩니다.
+예: `local-my-time-users`, `prod-my-time-users`
+
+로컬 개발/배포 환경 변수는 모두 저장소 루트 `.env*` 파일에서 관리합니다.
 
 ## 테스트 환경 비교
 

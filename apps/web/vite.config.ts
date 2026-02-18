@@ -1,10 +1,29 @@
+import { execSync } from 'node:child_process';
+import { resolve } from 'node:path';
+
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import svgr from 'vite-plugin-svgr';
 import { defineConfig } from 'vitest/config';
 
+const resolveGitCommitSha = () => {
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim();
+  } catch {
+    return 'unknown';
+  }
+};
+
+const commitSha = resolveGitCommitSha();
+const buildTimestamp = new Date().toISOString();
+const buildVersion = `date:${buildTimestamp.slice(0, 10)} time:${buildTimestamp.slice(11, 19)}Z commit:${commitSha}`;
+
 // https://vitejs.dev/config/
 export default defineConfig({
+  envDir: resolve(__dirname, '../..'),
+  define: {
+    __BUILD_VERSION__: JSON.stringify(buildVersion),
+  },
   test: {
     globals: true,
     environment: 'node',
