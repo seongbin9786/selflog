@@ -69,7 +69,10 @@ const unwrapStorageWrapperOnce = (raw: string): string => {
     }
 
     const keys = Object.keys(record);
-    if (keys.length === 0 || !keys.every((key) => STORAGE_WRAPPER_KEYS.has(key))) {
+    if (
+      keys.length === 0 ||
+      !keys.every((key) => STORAGE_WRAPPER_KEYS.has(key))
+    ) {
       return raw;
     }
 
@@ -262,7 +265,9 @@ export const importBackup = async (file: File): Promise<ImportBackupReport> => {
         const token = localStorage.getItem('token');
         const logEntries = Object.entries(backup.logs)
           .filter(([key]) => LOG_DATE_REGEX.test(key))
-          .map(([date, content]) => [date, normalizeLogContent(content)] as const)
+          .map(
+            ([date, content]) => [date, normalizeLogContent(content)] as const,
+          )
           .sort(([a], [b]) => a.localeCompare(b));
         const emptyLogs = logEntries.filter(([, value]) => !value);
 
