@@ -44,9 +44,14 @@ cp .env.production.example .env.production
 # dev면
 # cp .env.development.example .env.development
 
-# 2) 배포
+# 2) 최초 배포(권장): ACM 생성 + DNS 검증 자동화 + 배포
+pnpm run create:aws:acm:prod:porkbun
+# ACM DNS 검증/발급 대기 시간은 보통 약 1분 30초 내외(환경에 따라 더 길 수 있음)
+# 출력된 박스의 `Copy line` 값을 `.env.production`의 `ACM_CERTIFICATE_ARN=`에 그대로 반영
+pnpm run deploy:prod:porkbun
+
+# 3) 후속 배포(일반): 코드 배포만
 pnpm run deploy:prod
-# pnpm run deploy:dev
 ```
 
 배포는 저장소 루트에서만 허용됩니다.
@@ -128,6 +133,11 @@ pnpm lint:fix         # 린트 자동 수정
 # 배포
 pnpm run deploy:prod     # 전체 배포 (prod)
 pnpm run deploy:dev      # 전체 배포 (dev)
+pnpm run deploy:prod:porkbun  # 배포 후 DNS 자동 동기화 (Porkbun)
+pnpm run dns:sync:porkbun -- prod  # DNS만 재동기화(CloudFront 주소 자동 조회)
+pnpm run create:aws:acm:prod:porkbun  # ACM 생성 + DNS 검증 레코드 자동 반영
+pnpm run undeploy:prod   # prod 스택 + ACM 제거 (기본)
+# ACM 유지 시: pnpm run undeploy -- prod --keep-acm
 ```
 
 ## 🔐 환경 변수
@@ -138,7 +148,21 @@ pnpm run deploy:dev      # 전체 배포 (dev)
 JWT_SECRET=your-fixed-secret
 WEB_DOMAIN_NAME=my-commit.com
 ACM_CERTIFICATE_ARN=arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/xxxx
+
+# Optional: DNS provider integration (after web deploy)
+# AWS_PROFILE=my-aws-profile
+# UPDATE_DNS_RECORD=true
+# DNS_PROVIDER=porkbun
+# PORKBUN_API_KEY=pk1_xxxxxxxxxxxxx
+# PORKBUN_SECRET_API_KEY=sk1_xxxxxxxxxxxxx
+# PORKBUN_ROOT_DOMAIN=my-commit.com
+# PORKBUN_RECORD_TYPE=ALIAS
+# PORKBUN_TTL=600
+# PORKBUN_DRY_RUN=false
 ```
+
+Porkbun 연동 시 주의:
+- 대상 도메인(`my-commit.com`)의 `API Access`를 Porkbun 콘솔에서 먼저 활성화해야 합니다.
 
 `dev` 배포 시에는 `.env.development`가 동일한 방식으로 사용됩니다.
 
