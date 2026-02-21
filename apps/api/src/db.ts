@@ -34,6 +34,6 @@ export const getDynamoDb = (): DynamoDBDocumentClient => {
 
 const stage = process.env.SLS_STAGE || "local";
 
-export const TABLE_NAME = `${stage}-my-time-users`;
-export const LOGS_TABLE_NAME = `${stage}-my-time-logs`;
-export const LOG_BACKUPS_TABLE_NAME = `${stage}-my-time-log-backups`;
+export const TABLE_NAME = `${stage}-my-commit-users`;
+export const LOGS_TABLE_NAME = `${stage}-my-commit-logs`;
+export const LOG_BACKUPS_TABLE_NAME = `${stage}-my-commit-log-backups`;

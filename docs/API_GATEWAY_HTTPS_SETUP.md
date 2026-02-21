@@ -21,7 +21,7 @@ API Gateway용 인증서는 API 리전(`ap-northeast-2`)에 있어야 합니다.
 
 ### 1-2. 배포 전제
 
-- API 스택(`my-time-api-prod`)이 먼저 배포되어 있어야 함
+- API 스택(`my-commit-api-prod`)이 먼저 배포되어 있어야 함
 - 외부 DNS(가비아/Cloudflare 등) 접근 권한 필요
 
 ---
@@ -35,7 +35,7 @@ API Gateway용 인증서는 API 리전(`ap-northeast-2`)에 있어야 합니다.
    - Endpoint: `Regional`
    - TLS: `TLS 1.2`
    - Certificate: 위 인증서 선택
-4. 저장 후 대상 API(`my-time-api-prod`)와 매핑
+4. 저장 후 대상 API(`my-commit-api-prod`)와 매핑
 
 ---
 

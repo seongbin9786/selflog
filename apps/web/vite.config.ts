@@ -36,8 +36,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'apple-touch-icon.png', 'icon-512.png'],
       manifest: {
-        name: 'My Time - 시간 기록 앱',
-        short_name: 'My Time',
+        name: 'My Commit - 시간 기록 앱',
+        short_name: 'My Commit',
         description: '생산적인 시간 관리를 위한 시간 기록 앱',
         theme_color: '#6366f1',
         background_color: '#0f172a',

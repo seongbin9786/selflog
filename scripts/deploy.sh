@@ -1,88 +1,63 @@
 #!/usr/bin/env bash
+# 역할: 전체 배포 오케스트레이션(API -> Web -> DNS 후처리) 실행 엔트리포인트.
 set -euo pipefail
-# NOTE: Bash strict mode
-# -e: Exit immediately if any command fails
-# -u: Treat unset variables as an error
-# -o pipefail: Return exit code of the first failed command in a pipeline
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+source "${ROOT_DIR}/scripts/lib/deploy-common.sh"
 
-if [[ "${1:-}" == "--" ]]; then
-  shift
-fi
-
-STAGE="${1:-prod}"
-
-if [[ $# -gt 1 ]]; then
-  echo "Usage: deploy.sh [prod|dev]"
-  exit 1
-fi
-
-if [[ "${STAGE}" != "prod" && "${STAGE}" != "dev" ]]; then
-  echo "Invalid stage: ${STAGE}"
-  echo "Allowed: prod | dev"
-  exit 1
-fi
-
-load_env_file() {
-  local file="$1"
-  if [[ -f "${file}" ]]; then
-    echo "Load env: ${file}"
-    set -a
-    # shellcheck disable=SC1090
-    source "${file}"
-    set +a
+# 배포 오케스트레이션 엔트리포인트:
+# [1] API 배포 -> [2] Web 배포 -> [3] DNS 후처리
+main() {
+  deploy_parse_args "$@"
+  if [[ "${DEPLOY_SHOW_HELP}" == "true" ]]; then
+    deploy_usage
+    exit 0
   fi
+
+  deploy_validate_stage "${DEPLOY_STAGE}"
+  deploy_load_stage_env "${ROOT_DIR}" "${DEPLOY_STAGE}"
+
+  deploy_require_env "JWT_SECRET"
+  deploy_require_env "WEB_DOMAIN_NAME"
+  deploy_require_env "ACM_CERTIFICATE_ARN"
+  deploy_validate_cloudfront_acm_arn "${ACM_CERTIFICATE_ARN}"
+
+  local stage="${DEPLOY_STAGE}"
+  local region="${AWS_REGION:-ap-northeast-2}"
+  local api_stack_name="${API_STACK_NAME:-${stage}-my-commit-api}"
+  local web_stack_name="${WEB_STACK_NAME:-${stage}-my-commit-web}"
+  local resolved_dns_provider="${DEPLOY_DNS_PROVIDER_ARG:-${DNS_PROVIDER:-none}}"
+  local web_origin="https://${WEB_DOMAIN_NAME}"
+  local -a sls_profile_args=()
+
+  if [[ -n "${AWS_PROFILE:-}" ]]; then
+    sls_profile_args=(--aws-profile "${AWS_PROFILE}")
+  fi
+
+  # [1] API Serverless 배포
+  echo "[1/3] Deploy API: pnpm --filter my-commit-api run sls:deploy"
+  MY_COMMIT_ROOT_DEPLOY=1 WEB_ORIGIN="${web_origin}" JWT_SECRET="${JWT_SECRET}" \
+  pnpm --filter my-commit-api run sls:deploy --stage "${stage}" --region "${region}" "${sls_profile_args[@]}"
+
+  local api_url
+  api_url="$(deploy_resolve_api_url "${api_stack_name}" "${region}")"
+
+  # [2] S3, CloudFront 배포 (배포된 API 주소 주입)
+  echo "[2/3] Deploy Web: pnpm --filter my-commit-client run deploy"
+  MY_COMMIT_ROOT_DEPLOY=1 VITE_API_URL="${api_url}" \
+  WEB_DOMAIN_NAME="${WEB_DOMAIN_NAME}" \
+  ACM_CERTIFICATE_ARN="${ACM_CERTIFICATE_ARN}" \
+  pnpm --filter my-commit-client run deploy --stage "${stage}" --region "${region}" "${sls_profile_args[@]}"
+
+  # [3] DNS Provider API 활용해서 CloudFront 주소에 DNS 설정(등록/갱신)
+  echo "[3/3] Post deploy DNS sync"
+  UPDATE_DNS_RECORD="${UPDATE_DNS_RECORD:-false}" \
+  DNS_PROVIDER="${resolved_dns_provider}" \
+  WEB_DOMAIN_NAME="${WEB_DOMAIN_NAME}" \
+  WEB_STACK_NAME="${web_stack_name}" \
+  AWS_REGION="${region}" \
+  bash "${ROOT_DIR}/scripts/sync-dns-after-deploy.sh"
 }
 
-if [[ "${STAGE}" == "prod" ]]; then
-  ENV_NAME="production"
-else
-  ENV_NAME="development"
-fi
-
-# Later files override earlier values.
-load_env_file "${ROOT_DIR}/.env"
-load_env_file "${ROOT_DIR}/.env.local"
-load_env_file "${ROOT_DIR}/.env.${ENV_NAME}"
-load_env_file "${ROOT_DIR}/.env.${ENV_NAME}.local"
-
-REGION="${AWS_REGION:-ap-northeast-2}"
-API_STACK_NAME="${API_STACK_NAME:-${STAGE}-my-time-api}"
-
-if [[ -z "${JWT_SECRET:-}" ]]; then
-  echo "JWT_SECRET is required"
-  exit 1
-fi
-
-if [[ -z "${WEB_DOMAIN_NAME:-}" || -z "${ACM_CERTIFICATE_ARN:-}" ]]; then
-  echo "Custom domain is required."
-  echo "Set both WEB_DOMAIN_NAME and ACM_CERTIFICATE_ARN in env."
-  exit 1
-fi
-
-WEB_ORIGIN="https://${WEB_DOMAIN_NAME}"
-
-echo "Deploy API with WEB_ORIGIN=${WEB_ORIGIN}"
-MY_TIME_ROOT_DEPLOY=1 WEB_ORIGIN="${WEB_ORIGIN}" JWT_SECRET="${JWT_SECRET}" \
-pnpm --filter my-time-api run sls:deploy --stage "${STAGE}" --region "${REGION}"
-
-API_URL="$(
-  aws cloudformation describe-stacks \
-    --stack-name "${API_STACK_NAME}" \
-    --region "${REGION}" \
-    --query 'Stacks[0].Outputs[?OutputKey==`HttpApiUrl`].OutputValue' \
-    --output text
-)"
-
-if [[ -z "${API_URL}" || "${API_URL}" == "None" ]]; then
-  echo "Failed to resolve HttpApiUrl from ${API_STACK_NAME}"
-  exit 1
-fi
-
-echo "Deploy Web with VITE_API_URL=${API_URL}"
-MY_TIME_ROOT_DEPLOY=1 VITE_API_URL="${API_URL}" \
-WEB_DOMAIN_NAME="${WEB_DOMAIN_NAME:-}" \
-ACM_CERTIFICATE_ARN="${ACM_CERTIFICATE_ARN:-}" \
-pnpm --filter my-time-client run deploy --stage "${STAGE}" --region "${REGION}"
+main "$@"

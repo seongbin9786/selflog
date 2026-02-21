@@ -67,7 +67,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          API_STACK_NAME="prod-my-time-api"
+          API_STACK_NAME="prod-my-commit-api"
 
           API_URL="$(aws cloudformation describe-stacks \
             --stack-name "${API_STACK_NAME}" \

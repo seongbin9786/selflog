@@ -54,7 +54,9 @@ describe('backupService', () => {
       const [blob, filename] = vi.mocked(saveAs).mock.calls[0];
 
       expect(blob as Blob).toBeInstanceOf(Blob);
-      expect(filename).toMatch(/my-time-server-backup-\d{4}-\d{2}-\d{2}\.json/);
+      expect(filename).toMatch(
+        /my-commit-server-backup-\d{4}-\d{2}-\d{2}\.json/,
+      );
 
       // Verify blob content
       const text = await (blob as Blob).text();

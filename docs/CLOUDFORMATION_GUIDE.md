@@ -70,7 +70,7 @@ resources:
    - **내용물**: 변환된 CloudFormation 템플릿 파일, Lambda zip 파일 등
    - Serverless Framework가 자동으로 생성하고 관리합니다.
 
-2. **Service Bucket** (`my-time-web-sb-dev`)
+2. **Service Bucket** (`my-commit-web-sb-dev`)
    - **용도**: 실제 우리가 만든 서비스(웹사이트)를 위한 저장소
    - **내용물**: `index.html`, `bundle.js`, 이미지 등
    - 우리가 `resources` 섹션에서 명시적으로 정의한 리소스입니다.

@@ -138,7 +138,10 @@ export const downloadBackupInfo = (backup: BackupData) => {
   const blob = new Blob([JSON.stringify(backup, null, 2)], {
     type: 'application/json;charset=utf-8',
   });
-  saveAs(blob, `my-time-backup-${new Date().toISOString().slice(0, 10)}.json`);
+  saveAs(
+    blob,
+    `my-commit-backup-${new Date().toISOString().slice(0, 10)}.json`,
+  );
 };
 
 type ImportBackupReport = {
@@ -407,7 +410,7 @@ export const exportLogsToExcel = () => {
 
   const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
   const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
-  saveAs(data, `my-time-logs-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  saveAs(data, `my-commit-logs-${new Date().toISOString().slice(0, 10)}.xlsx`);
 };
 
 export const fetchAndDownloadServerBackup = async (token: string) => {
@@ -445,6 +448,6 @@ export const fetchAndDownloadServerBackup = async (token: string) => {
   });
   saveAs(
     blob,
-    `my-time-server-backup-${new Date().toISOString().slice(0, 10)}.json`,
+    `my-commit-server-backup-${new Date().toISOString().slice(0, 10)}.json`,
   );
 };

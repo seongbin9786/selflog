@@ -1,5 +1,5 @@
 {
-  "name": "my-time-client",
+  "name": "my-commit-client",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -11,7 +11,7 @@
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --max-warnings 0 --fix",
     "preview": "vite preview",
-    "deploy": "if [ \"${MY_TIME_ROOT_DEPLOY:-}\" != \"1\" ]; then echo \"Use repository-root deploy command: pnpm run deploy:prod or pnpm run deploy:dev\"; exit 1; fi; pnpm build && serverless deploy",
+    "deploy": "if [ \"${MY_COMMIT_ROOT_DEPLOY:-}\" != \"1\" ]; then echo \"Use repository-root deploy command: pnpm run deploy:prod or pnpm run deploy:dev\"; exit 1; fi; pnpm build && serverless deploy",
     "remove": "serverless remove"
   },
   "dependencies": {
@@ -28,7 +28,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@my-time/eslint-config": "workspace:*",
+    "@my-commit/eslint-config": "workspace:*",
     "@types/file-saver": "^2.0.7",
     "@types/node": "^20.1.1",
     "@types/react": "^18.0.28",

@@ -36,7 +36,7 @@ const printUsage = () => {
       '  node scripts/fix-contaminated-backup.mjs <backup-json-file>',
       '',
       'Example:',
-      '  node scripts/fix-contaminated-backup.mjs ./my-time-backup.json',
+      '  node scripts/fix-contaminated-backup.mjs ./my-commit-backup.json',
     ].join('\n'),
   );
 };

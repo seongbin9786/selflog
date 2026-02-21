@@ -28,7 +28,7 @@ const client = new DynamoDBClient({
 
 const tables = [
   {
-    TableName: `${STAGE}-my-time-users`,
+    TableName: `${STAGE}-my-commit-users`,
     KeySchema: [{ AttributeName: "username", KeyType: "HASH" as const }],
     AttributeDefinitions: [
       { AttributeName: "username", AttributeType: "S" as const },
@@ -36,7 +36,7 @@ const tables = [
     BillingMode: "PAY_PER_REQUEST" as const,
   },
   {
-    TableName: `${STAGE}-my-time-logs`,
+    TableName: `${STAGE}-my-commit-logs`,
     KeySchema: [
       { AttributeName: "userId", KeyType: "HASH" as const },
       { AttributeName: "date", KeyType: "RANGE" as const },
@@ -48,7 +48,7 @@ const tables = [
     BillingMode: "PAY_PER_REQUEST" as const,
   },
   {
-    TableName: `${STAGE}-my-time-log-backups`,
+    TableName: `${STAGE}-my-commit-log-backups`,
     KeySchema: [
       { AttributeName: "userId", KeyType: "HASH" as const },
       { AttributeName: "backupId", KeyType: "RANGE" as const },

@@ -16,7 +16,7 @@ const client = new DynamoDBClient({
   },
 });
 
-const tableNames = [`${STAGE}-my-time-users`, `${STAGE}-my-time-logs`];
+const tableNames = [`${STAGE}-my-commit-users`, `${STAGE}-my-commit-logs`];
 
 async function deleteTables() {
   console.log('🔍 기존 테이블 확인 중...');

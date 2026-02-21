@@ -1,4 +1,4 @@
-service: my-time-api
+service: my-commit-api
 
 frameworkVersion: "3"
 useDotenv: true
@@ -61,9 +61,9 @@ provider:
             - !GetAtt LogBackupsTable.Arn
 
 custom:
-  usersTableName: ${self:provider.stage}-my-time-users
-  logsTableName: ${self:provider.stage}-my-time-logs
-  logBackupsTableName: ${self:provider.stage}-my-time-log-backups
+  usersTableName: ${self:provider.stage}-my-commit-users
+  logsTableName: ${self:provider.stage}-my-commit-logs
+  logBackupsTableName: ${self:provider.stage}-my-commit-log-backups
   webOrigin:
     local: http://localhost:5173
     dev: ${env:WEB_ORIGIN}

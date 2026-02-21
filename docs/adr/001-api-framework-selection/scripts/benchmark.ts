@@ -111,7 +111,7 @@ async function runLocal(cold: boolean) {
 
   // Hono (dev mode)
   const honoDevStart = Date.now();
-  const honoDev = spawn('pnpm', ['--filter', 'my-time-api', 'dev'], {
+  const honoDev = spawn('pnpm', ['--filter', 'my-commit-api', 'dev'], {
     env: { ...process.env, PORT: String(HONO_PORT) },
     stdio: 'ignore',
     detached: true

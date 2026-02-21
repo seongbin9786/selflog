@@ -2,7 +2,7 @@
 
 ## 핵심 결정 요인: 서비스 비용 최소화
 
-개인 프로젝트 `my-time`은 트래픽이 적은 서비스입니다.
+개인 프로젝트 `my-commit`은 트래픽이 적은 서비스입니다.
 따라서 운영 비용을 최소화하는 것이 중요합니다.
 
 이를 위해 AWS Lambda + DynamoDB 조합을 선택했고,
@@ -118,7 +118,7 @@ Hono는 NestJS보다 구조가 단순하여, 간단한 CRUD API 개발에 적합
 - 프레임워크: Hono → 빠른 Cold Start (~270ms)
 - 개발 경험: 단순한 API에는 NestJS의 복잡한 구조보다 Hono의 간결함이 적합
 
-이 조합이 `my-time` 프로젝트에 적합한 선택입니다.
+이 조합이 `my-commit` 프로젝트에 적합한 선택입니다.
 
 ---
 
@@ -302,7 +302,7 @@ Top 20 Slowest Requires
 
 ```bash
 # Hono 빌드
-pnpm --filter my-time-api-hono build
+pnpm --filter my-commit-api-hono build
 
 # Hono 부팅 시간 측정 (100회)
 pnpm exec tsx scripts/profile-hono.ts

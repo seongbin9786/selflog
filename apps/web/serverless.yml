@@ -1,4 +1,4 @@
-service: my-time-web
+service: my-commit-web
 
 frameworkVersion: '3'
 useDotenv: true
@@ -11,7 +11,7 @@ provider:
   stackName: ${self:provider.stage}-${self:service}
 
 custom:
-  bucketName: my-time-web-sb-${self:provider.stage}
+  bucketName: my-commit-web-sb-${self:provider.stage}
   webDomainName: ${env:WEB_DOMAIN_NAME, ''}
   acmCertificateArn: ${env:ACM_CERTIFICATE_ARN, ''}
 
@@ -95,7 +95,7 @@ resources:
         DistributionConfig:
           Enabled: true
           DefaultRootObject: index.html
-          Comment: My Time Web App - ${self:provider.stage}
+          Comment: My Commit Web App - ${self:provider.stage}
           PriceClass: PriceClass_All # 전 세계 모든 엣지 로케이션
           HttpVersion: http2and3
 

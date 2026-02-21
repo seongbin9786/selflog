@@ -4,8 +4,8 @@
 - API deploy config: `apps/api/serverless.yml`
 - Web deploy config: `apps/web/serverless.yml`
 - API Lambda count: 1 (`functions.api`, `httpApi: "*"`)
-- API local command A: `pnpm --filter my-time-api dev:local` -> `tsx watch src/index.ts`
-- API local command B: `pnpm --filter my-time-api sls:offline` -> `pnpm build && serverless offline --stage local`
+- API local command A: `pnpm --filter my-commit-api dev:local` -> `tsx watch src/index.ts`
+- API local command B: `pnpm --filter my-commit-api sls:offline` -> `pnpm build && serverless offline --stage local`
 
 ## 2. Tool Matrix (Objective)
 

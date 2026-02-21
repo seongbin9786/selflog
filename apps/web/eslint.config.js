@@ -1,4 +1,4 @@
-import { reactConfig } from '@my-time/eslint-config';
+import { reactConfig } from '@my-commit/eslint-config';
 import globals from 'globals';
 
 /** @type {import('eslint').Linter.FlatConfig[]} */

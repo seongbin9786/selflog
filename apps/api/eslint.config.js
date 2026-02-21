@@ -1,4 +1,4 @@
-import { baseConfig } from "@my-time/eslint-config";
+import { baseConfig } from "@my-commit/eslint-config";
 import globals from "globals";
 
 /** @type {import('eslint').Linter.FlatConfig[]} */

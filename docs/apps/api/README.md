@@ -1,4 +1,4 @@
-# My Time API
+# My Commit API
 
 Hono 기반 서버리스 API (AWS Lambda + DynamoDB)
 
@@ -154,7 +154,7 @@ GET  /raw-logs/:date    - 날짜별 로그 조회
 | `PORT`                 | 서버 포트               | 3000                  |
 
 테이블 이름은 환경변수 오버라이드 없이 `SLS_STAGE` 기준으로 자동 결정됩니다.
-예: `local-my-time-users`, `prod-my-time-users`
+예: `local-my-commit-users`, `prod-my-commit-users`
 
 로컬 개발/배포 환경 변수는 모두 저장소 루트 `.env*` 파일에서 관리합니다.
 

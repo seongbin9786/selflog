@@ -1,5 +1,5 @@
 {
-  "name": "my-time-api",
+  "name": "my-commit-api",
   "version": "0.0.1",
   "type": "module",
   "private": true,
@@ -16,7 +16,7 @@
     "db:reset": "pnpm db:delete-tables && pnpm db:create-tables",
     "local:start": "pnpm db:start && sleep 2 && pnpm db:create-tables && pnpm dev:local",
     "sls:offline": "sh scripts/with-root-env.sh sh -c 'pnpm build && IS_OFFLINE=true SLS_STAGE=local serverless offline --stage local'",
-    "sls:deploy": "if [ \"${MY_TIME_ROOT_DEPLOY:-}\" != \"1\" ]; then echo \"Use repository-root deploy command: pnpm run deploy:prod or pnpm run deploy:dev\"; exit 1; fi; pnpm build && serverless deploy",
+    "sls:deploy": "if [ \"${MY_COMMIT_ROOT_DEPLOY:-}\" != \"1\" ]; then echo \"Use repository-root deploy command: pnpm run deploy:prod or pnpm run deploy:dev\"; exit 1; fi; pnpm build && serverless deploy",
     "sls:remove": "serverless remove"
   },
   "dependencies": {
@@ -28,7 +28,7 @@
     "jose": "^6.1.3"
   },
   "devDependencies": {
-    "@my-time/eslint-config": "workspace:*",
+    "@my-commit/eslint-config": "workspace:*",
     "@types/aws-lambda": "^8.10.133",
     "@types/node": "^20.11.17",
     "eslint": "^9.0.0",

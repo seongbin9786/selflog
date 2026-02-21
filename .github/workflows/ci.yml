@@ -45,7 +45,7 @@ jobs:
           node-version: 22
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter my-time-client lint
+      - run: pnpm --filter my-commit-client lint
 
   # Frontend Build
   build-web:
@@ -62,7 +62,7 @@ jobs:
           node-version: 22
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter my-time-client build
+      - run: pnpm --filter my-commit-client build
 
   # Backend Lint
   lint-api:
@@ -79,7 +79,7 @@ jobs:
           node-version: 22
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter my-time-api lint
+      - run: pnpm --filter my-commit-api lint
 
   # Backend Build
   build-api:
@@ -96,4 +96,4 @@ jobs:
           node-version: 22
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter my-time-api build
+      - run: pnpm --filter my-commit-api build
