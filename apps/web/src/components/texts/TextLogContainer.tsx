@@ -149,33 +149,47 @@ export const TextLogContainer = () => {
     setIsProductive(true);
   }, []);
 
+  const appendPendingConsumptionLog = useCallback(
+    (minutes: number | null) => {
+      if (!pendingRestLog) return;
+
+      const { timeStr, content } = pendingRestLog;
+
+      // 소비 로그 추가
+      const newLogItem = createLogItem(timeStr, false, content);
+      const updatedRawLog = addLogEntry(
+        rawLogsRef.current,
+        newLogItem,
+        timeInput.trim() !== '',
+      );
+
+      setRawLogs(updatedRawLog);
+
+      if (minutes && minutes > 0) {
+        dispatch(
+          setRestNotification({
+            targetTime: timeStr,
+            durationMinutes: minutes,
+          }),
+        );
+      } else {
+        dispatch(clearRestNotification());
+      }
+
+      // 상태 초기화
+      resetInputs();
+      setPendingRestLog(null);
+      textareaRef.current?.focus();
+    },
+    [dispatch, pendingRestLog, resetInputs, setRawLogs, timeInput],
+  );
+
   const handleRestTimeSubmit = (minutes: number) => {
-    if (!pendingRestLog) return;
+    appendPendingConsumptionLog(minutes);
+  };
 
-    const { timeStr, content } = pendingRestLog;
-
-    // 휴식 로그 추가
-    const newLogItem = createLogItem(timeStr, false, content);
-    const updatedRawLog = addLogEntry(
-      rawLogs,
-      newLogItem,
-      timeInput.trim() !== '',
-    );
-
-    setRawLogs(updatedRawLog);
-
-    // 알림 설정
-    dispatch(
-      setRestNotification({
-        targetTime: timeStr,
-        durationMinutes: minutes,
-      }),
-    );
-
-    // 상태 초기화
-    resetInputs();
-    setPendingRestLog(null);
-    textareaRef.current?.focus();
+  const handleRestTimeSkip = () => {
+    appendPendingConsumptionLog(null);
   };
 
   const handleRestDialogClose = () => {
@@ -334,6 +348,7 @@ export const TextLogContainer = () => {
         isOpen={isRestDialogOpen}
         onClose={handleRestDialogClose}
         onSubmit={handleRestTimeSubmit}
+        onSkip={handleRestTimeSkip}
       />
     </div>
   );

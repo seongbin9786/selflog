@@ -7,12 +7,14 @@ interface RestTimeInputDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (minutes: number) => void;
+  onSkip: () => void;
 }
 
 export const RestTimeInputDialog: React.FC<RestTimeInputDialogProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  onSkip,
 }) => {
   const [minutesInput, setMinutesInput] = useState('');
   const [error, setError] = useState('');
@@ -75,6 +77,11 @@ export const RestTimeInputDialog: React.FC<RestTimeInputDialogProps> = ({
     }
   };
 
+  const handleSkip = () => {
+    onSkip();
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -85,6 +92,8 @@ export const RestTimeInputDialog: React.FC<RestTimeInputDialogProps> = ({
           원하는 휴식 시간을 분 단위로 입력하세요.
           <br />
           종료 1분 전과 종료 시각에 알림을 받을 수 있습니다.
+          <br />
+          알림이 필요 없다면 바로 소비 기록만 등록할 수 있습니다.
         </p>
 
         <div className="form-control">
@@ -115,6 +124,9 @@ export const RestTimeInputDialog: React.FC<RestTimeInputDialogProps> = ({
         <div className="modal-action">
           <button type="button" className="btn btn-ghost" onClick={onClose}>
             취소 (ESC)
+          </button>
+          <button type="button" className="btn btn-outline" onClick={handleSkip}>
+            알람 없이 등록
           </button>
           <button
             type="button"
