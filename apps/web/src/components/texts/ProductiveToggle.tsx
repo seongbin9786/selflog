@@ -5,7 +5,7 @@ interface ProductiveToggleProps {
   isProductive: boolean;
   setIsProductive: (value: boolean) => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  checkboxRef: React.RefObject<HTMLInputElement>;
+  checkboxRef: React.RefObject<HTMLInputElement | null>;
 }
 
 export const ProductiveToggle = ({
